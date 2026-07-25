@@ -136,6 +136,36 @@ const styleThemes: Record<
   },
 };
 
+const CAMPAIGN_TYPES = [
+  "Just Listed",
+  "Open House",
+  "Price Reduction",
+  "Just Reduced",
+  "Back on Market",
+  "Coming Soon",
+  "Under Contract",
+  "Sold",
+  "Investment Opportunity",
+  "New Construction",
+];
+
+const PROPERTY_TYPES = [
+  "Single Family Residence",
+  "Condominium",
+  "Townhouse",
+  "Multi-Family (2–4 units)",
+  "Manufactured / Mobile Home",
+  "Land / Lot",
+  "Commercial",
+  "Other",
+];
+
+const presetTracks = [
+  { id: "cinematic", name: "Cinematic", description: "Elegant · atmospheric", url: "/music/cinematic.mp3" },
+  { id: "upbeat", name: "Upbeat", description: "Bright · energetic", url: "/music/upbeat.mp3" },
+  { id: "corporate", name: "Corporate", description: "Clean · professional", url: "/music/corporate.mp3" },
+] as const;
+
 function Field({
   label,
   value,
@@ -157,6 +187,34 @@ function Field({
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
       />
+    </label>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  className = "",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+  className?: string;
+}) {
+  return (
+    <label className={`field ${className}`}>
+      <span>{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+        {!options.includes(value) && (
+          <option value={value}>{value}</option>
+        )}
+      </select>
     </label>
   );
 }
@@ -830,10 +888,11 @@ export default function Home() {
                 closing story; the MLS-safe version remains property-only.
               </p>
               <div className="form-grid">
-                <Field
+                <SelectField
                   label="Campaign"
                   value={project.campaign}
                   onChange={(value) => updateProject("campaign", value)}
+                  options={CAMPAIGN_TYPES}
                 />
                 <Field
                   label="Listing price"
@@ -872,11 +931,12 @@ export default function Home() {
                   value={project.mlsNumber}
                   onChange={(value) => updateProject("mlsNumber", value)}
                 />
-                <Field
+                <SelectField
                   label="Property type"
                   className="wide"
                   value={project.propertyType}
                   onChange={(value) => updateProject("propertyType", value)}
+                  options={PROPERTY_TYPES}
                 />
                 <label className="field wide">
                   <span>Property description</span>
@@ -1040,16 +1100,37 @@ export default function Home() {
 
               <div className="option-block">
                 <h2>Soundtrack</h2>
+                <div className="music-presets">
+                  {presetTracks.map((track) => (
+                    <button
+                      key={track.id}
+                      className={`music-preset${music?.url === track.url ? " selected" : ""}`}
+                      onClick={() =>
+                        setMusic(
+                          music?.url === track.url
+                            ? null
+                            : { name: track.name, url: track.url },
+                        )
+                      }
+                    >
+                      <span className="music-note">♪</span>
+                      <strong>{track.name}</strong>
+                      <small>{track.description}</small>
+                    </button>
+                  ))}
+                </div>
                 <div className="music-row">
                   <div>
-                    <strong>{music ? music.name : "No music selected"}</strong>
+                    <strong>
+                      {music ? `Selected: ${music.name}` : "No music selected"}
+                    </strong>
                     <small>
-                      Upload music you own or are licensed to use. MLS-safe exports
-                      are always silent.
+                      Choose a built-in track or upload music you own. MLS-safe
+                      exports are always silent.
                     </small>
                   </div>
                   <label className="secondary-button">
-                    {music ? "Replace track" : "Upload track"}
+                    {music && music.url.startsWith("blob:") ? "Replace track" : "Upload custom"}
                     <input
                       type="file"
                       accept="audio/*"
