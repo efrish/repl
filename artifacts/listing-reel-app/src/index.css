@@ -335,10 +335,19 @@ label:has(input:focus-visible) {
 .lr-mark-lg { border-radius: 16px; font-size: 24px; height: 60px; width: 60px; }
 .lr-wordmark {
   color: var(--charcoal);
+  display: block;
   font-family: Georgia, serif;
   font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.3px;
+  line-height: 1.1;
+}
+.lr-nav-byline {
+  color: var(--ink-soft);
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
 }
 .lr-nav-actions { align-items: center; display: flex; gap: 10px; }
 .lr-btn-ghost {

@@ -205,7 +205,10 @@ function Landing() {
       <nav className="lr-nav">
         <div className="lr-nav-brand">
           <div className="lr-mark">LR</div>
-          <span className="lr-wordmark">ListingReel</span>
+          <div>
+            <span className="lr-wordmark">ListingReel</span>
+            <span className="lr-nav-byline">by Edward Frish</span>
+          </div>
         </div>
         <div className="lr-nav-actions">
           <button className="lr-btn-ghost" onClick={() => setLocation("/sign-in")}>Sign in</button>
