@@ -219,8 +219,8 @@ function Landing() {
           </div>
         </div>
         <div className="lr-nav-actions">
-          <Link href="/sign-in" className="lr-btn-ghost">Sign in</Link>
-          <Link href="/sign-up" className="lr-btn-primary">Request access</Link>
+          <a href={`${basePath}/sign-in`} className="lr-btn-ghost">Sign in</a>
+          <a href={`${basePath}/sign-up`} className="lr-btn-primary">Request access</a>
         </div>
       </nav>
 
@@ -238,7 +238,7 @@ function Landing() {
             Rendered entirely in your browser.
           </p>
           <div className="lr-hero-cta">
-            <Link href="/sign-up" className="lr-btn-primary lr-btn-lg">Request access →</Link>
+            <a href={`${basePath}/sign-up`} className="lr-btn-primary lr-btn-lg">Request access →</a>
             <span className="lr-cta-note">Approved agents only · Free for your office</span>
           </div>
           <div className="lr-trust-row">
@@ -357,7 +357,7 @@ function Landing() {
         <div className="lr-mark lr-mark-lg">LR</div>
         <h2>Ready to make your listings move?</h2>
         <p>Request access for your Century 21 Hollywood team.</p>
-        <Link href="/sign-up" className="lr-btn-primary lr-btn-lg">Request access →</Link>
+        <a href={`${basePath}/sign-up`} className="lr-btn-primary lr-btn-lg">Request access →</a>
       </section>
     </div>
   );
