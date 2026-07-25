@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "X9L99tFLEciLTYY7mxr2F"
+uri = "file://listing-reel-app.zip"
+type = "unspecified"
+title = "ListingReel – Source Code"
