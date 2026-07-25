@@ -356,9 +356,12 @@ label:has(input:focus-visible) {
   border-radius: 99px;
   color: var(--ink);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
   font-size: 13px;
   font-weight: 500;
   padding: 8px 20px;
+  text-decoration: none;
   transition: background 120ms;
 }
 .lr-btn-ghost:hover { background: rgba(0,0,0,0.05); }
@@ -368,13 +371,16 @@ label:has(input:focus-visible) {
   border-radius: 99px;
   color: #fff;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.02em;
   padding: 9px 22px;
+  text-decoration: none;
   transition: background 120ms, transform 100ms;
 }
-.lr-btn-primary:hover { background: #222c24; transform: translateY(-1px); }
+.lr-btn-primary:hover { background: #222c24; transform: translateY(-1px); color: #fff; }
 .lr-btn-lg { font-size: 15px; padding: 14px 32px; }
 
 /* Hero */
