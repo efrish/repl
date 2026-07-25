@@ -3,6 +3,8 @@ import {
   ClerkProvider,
   SignIn,
   SignUp,
+  SignInButton,
+  SignUpButton,
   useAuth,
   useClerk,
   useUser,
@@ -219,8 +221,12 @@ function Landing() {
           </div>
         </div>
         <div className="lr-nav-actions">
-          <a href={`${basePath}/sign-in`} className="lr-btn-ghost">Sign in</a>
-          <a href={`${basePath}/sign-up`} className="lr-btn-primary">Request access</a>
+          <SignInButton mode="modal">
+            <button className="lr-btn-ghost">Sign in</button>
+          </SignInButton>
+          <SignUpButton mode="modal">
+            <button className="lr-btn-primary">Request access</button>
+          </SignUpButton>
         </div>
       </nav>
 
@@ -238,7 +244,9 @@ function Landing() {
             Rendered entirely in your browser.
           </p>
           <div className="lr-hero-cta">
-            <a href={`${basePath}/sign-up`} className="lr-btn-primary lr-btn-lg">Request access →</a>
+            <SignUpButton mode="modal">
+              <button className="lr-btn-primary lr-btn-lg">Request access →</button>
+            </SignUpButton>
             <span className="lr-cta-note">Approved agents only · Free for your office</span>
           </div>
           <div className="lr-trust-row">
@@ -357,7 +365,9 @@ function Landing() {
         <div className="lr-mark lr-mark-lg">LR</div>
         <h2>Ready to make your listings move?</h2>
         <p>Request access for your Century 21 Hollywood team.</p>
-        <a href={`${basePath}/sign-up`} className="lr-btn-primary lr-btn-lg">Request access →</a>
+        <SignUpButton mode="modal">
+          <button className="lr-btn-primary lr-btn-lg">Request access →</button>
+        </SignUpButton>
       </section>
     </div>
   );
