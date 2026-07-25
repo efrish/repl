@@ -32,6 +32,7 @@ type Project = {
   baths: string;
   sqft: string;
   propertyType: string;
+  units: string;
   mlsNumber: string;
   description: string;
   highlights: string;
@@ -53,7 +54,8 @@ const initialProject: Project = {
   beds: "4",
   baths: "3",
   sqft: "2,850",
-  propertyType: "Single Family Residence",
+  propertyType: "SFR",
+  units: "",
   mlsNumber: "SR26123456",
   description:
     "A beautifully updated contemporary home with warm natural finishes, effortless indoor-outdoor living, and a private resort-style backyard.",
@@ -150,13 +152,13 @@ const CAMPAIGN_TYPES = [
 ];
 
 const PROPERTY_TYPES = [
-  "Single Family Residence",
-  "Condominium",
+  "SFR",
   "Townhouse",
-  "Multi-Family (2–4 units)",
-  "Manufactured / Mobile Home",
+  "Condo",
+  "Multi-Family / Building",
   "Land / Lot",
   "Commercial",
+  "Mobile Home",
   "Other",
 ];
 
@@ -165,6 +167,51 @@ const presetTracks = [
   { id: "upbeat", name: "Upbeat", description: "Bright · energetic", url: "/music/upbeat.mp3" },
   { id: "corporate", name: "Corporate", description: "Clean · professional", url: "/music/corporate.mp3" },
 ] as const;
+
+function getSlideText(
+  index: number,
+  project: Project,
+  highlights: string[],
+): { headline: string; subline: string } {
+  const unitSuffix = project.units ? ` · ${project.units} units` : "";
+  switch (index % 6) {
+    case 0:
+      return {
+        headline: project.campaign.toUpperCase(),
+        subline: `${project.price}  ·  ${project.beds} BED  ·  ${project.baths} BATH`,
+      };
+    case 1:
+      return {
+        headline: (highlights[0] || project.propertyType).toUpperCase(),
+        subline: project.address.toUpperCase(),
+      };
+    case 2:
+      return {
+        headline: (highlights[1] || `${project.beds} bed · ${project.baths} bath`).toUpperCase(),
+        subline: project.address.toUpperCase(),
+      };
+    case 3:
+      return {
+        headline: (highlights[2] || `${project.sqft} sq ft`).toUpperCase(),
+        subline: project.cityStateZip.toUpperCase(),
+      };
+    case 4:
+      return {
+        headline: `${project.beds} BED  ·  ${project.baths} BATH  ·  ${project.sqft} SQ FT`,
+        subline: (project.propertyType + unitSuffix).toUpperCase(),
+      };
+    case 5:
+      return {
+        headline: project.cta.toUpperCase(),
+        subline: project.phone,
+      };
+    default:
+      return {
+        headline: project.campaign.toUpperCase(),
+        subline: project.address.toUpperCase(),
+      };
+  }
+}
 
 function Field({
   label,
@@ -349,6 +396,16 @@ export default function Home() {
         .filter(Boolean)
         .slice(0, 3),
     [project.highlights],
+  );
+
+  const slideText = useMemo(
+    () =>
+      getSlideText(
+        previewIndex % Math.max(photos.length, 1),
+        project,
+        highlightList,
+      ),
+    [previewIndex, photos.length, project, highlightList],
   );
 
   const updateProject = useCallback((key: keyof Project, value: string) => {
@@ -567,15 +624,13 @@ export default function Home() {
 
           if (exportMode === "social") {
             const pad = Math.round(width * 0.075);
+            const st = getSlideText(scene.index, project, highlightList);
             context.fillStyle = "rgba(255,255,255,.92)";
             context.font = `600 ${Math.round(width * 0.032)}px Arial, sans-serif`;
-            context.fillText(project.address.toUpperCase(), pad, height - pad * 1.55);
-            if (scene.index === 1 || scene.index === 2) {
-              context.fillStyle = theme.accent;
-              context.font = `700 ${Math.round(width * 0.038)}px Arial, sans-serif`;
-              const feature = highlightList[scene.index - 1] || project.propertyType;
-              context.fillText(feature.toUpperCase(), pad, height - pad * 2.18);
-            }
+            context.fillText(st.subline, pad, height - pad * 1.55);
+            context.fillStyle = theme.accent;
+            context.font = `700 ${Math.round(width * 0.038)}px Arial, sans-serif`;
+            context.fillText(st.headline, pad, height - pad * 2.18);
             context.fillStyle = theme.accent;
             context.fillRect(pad, height - pad * 1.25, width * 0.18, Math.max(4, width * 0.006));
           }
@@ -938,6 +993,14 @@ export default function Home() {
                   onChange={(value) => updateProject("propertyType", value)}
                   options={PROPERTY_TYPES}
                 />
+                {project.propertyType === "Multi-Family / Building" && (
+                  <Field
+                    label="Number of units"
+                    value={project.units}
+                    onChange={(value) => updateProject("units", value)}
+                    placeholder="e.g. 6"
+                  />
+                )}
                 <label className="field wide">
                   <span>Property description</span>
                   <textarea
@@ -1264,13 +1327,8 @@ export default function Home() {
                   <div className="preview-vignette" />
                   {exportMode === "social" && (
                     <div className="preview-copy">
-                      <span>{project.campaign}</span>
-                      <h2>{project.address}</h2>
-                      <p>{project.cityStateZip}</p>
-                      <strong>{project.price}</strong>
-                      <div>
-                        {project.beds} BED · {project.baths} BATH · {project.sqft} SQ FT
-                      </div>
+                      <span className="preview-slide-headline">{slideText.headline}</span>
+                      <p className="preview-slide-subline">{slideText.subline}</p>
                     </div>
                   )}
                   <div className="preview-progress">
