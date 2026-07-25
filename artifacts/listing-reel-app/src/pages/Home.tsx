@@ -13,7 +13,7 @@ import {
 
 type Step = "photos" | "property" | "agent" | "style" | "preview";
 type Format = "vertical" | "square" | "landscape";
-type Style = "editorial" | "modern" | "energy";
+type Style = "editorial" | "modern" | "energy" | "triptych";
 type ExportMode = "social" | "mls";
 
 type Photo = {
@@ -135,6 +135,13 @@ const styleThemes: Record<
     accent: "#ff8066",
     dark: "#1f1421",
     light: "#fff0e9",
+  },
+  triptych: {
+    label: "Triptych",
+    detail: "Blurred surround · centered panel",
+    accent: "#ffffff",
+    dark: "#111111",
+    light: "#ffffff",
   },
 };
 
@@ -678,7 +685,7 @@ export default function Home() {
           resolve(new Blob(chunks, { type: recorder.mimeType || "video/webm" }));
       });
 
-      const photoDuration = style === "energy" ? 1300 : 1800;
+      const photoDuration = style === "energy" ? 1300 : style === "triptych" ? 2400 : 1800;
       const scenes =
         exportMode === "social"
           ? [
@@ -709,7 +716,62 @@ export default function Home() {
         context.fillStyle = theme.dark;
         context.fillRect(0, 0, width, height);
 
+
+        // ── Triptych helper: draw one image region with optional blur ─────────
+        function drawTriptychLayer(
+          img: HTMLImageElement,
+          demoIdx: number | undefined,
+          blurBg: boolean,
+          rx: number,
+          ry: number,
+          rw: number,
+          rh: number,
+          zoom = 1,
+        ) {
+          context.save();
+          if (blurBg) context.filter = "blur(22px) brightness(0.5) saturate(0.75)";
+          context.beginPath();
+          context.rect(rx, ry, rw, rh);
+          context.clip();
+          context.translate(rx, ry);
+          drawImageCover(context, img, rw, rh, zoom, demoIdx);
+          if (blurBg) context.filter = "none";
+          context.restore();
+        }
+
         if (scene.type === "photo" && "photo" in scene) {
+          if (style === "triptych") {
+            const { image, demoIndex } = scene.photo;
+            const px = Math.round(width * 0.11);
+            const pw = width - px * 2;
+            // Blurred full-frame backdrop
+            drawTriptychLayer(image, demoIndex, true, 0, 0, width, height);
+            // Clean center panel with slow zoom
+            drawTriptychLayer(image, demoIndex, false, px, 0, pw, height, 1.02 + sceneProgress * 0.04);
+            if (exportMode === "social") {
+              // Bottom gradient
+              const grad = context.createLinearGradient(0, height * 0.68, 0, height);
+              grad.addColorStop(0, "rgba(0,0,0,0)");
+              grad.addColorStop(1, "rgba(0,0,0,0.68)");
+              context.fillStyle = grad;
+              context.fillRect(0, 0, width, height);
+              // Centered white text
+              const st = getSlideText(scene.index, project, highlightList);
+              const fsMain = Math.round(width * 0.062);
+              context.textAlign = "center";
+              context.shadowColor = "rgba(0,0,0,0.9)";
+              context.shadowBlur = 12;
+              context.fillStyle = "white";
+              context.font = `700 ${fsMain}px Arial, sans-serif`;
+              context.fillText(st.headline, width / 2, height * 0.876);
+              context.fillStyle = "rgba(255,255,255,0.78)";
+              context.font = `500 ${Math.round(fsMain * 0.62)}px Arial, sans-serif`;
+              context.fillText(st.subline, width / 2, height * 0.921);
+              context.textAlign = "left";
+              context.shadowBlur = 0;
+            }
+            return;
+          }
           drawImageCover(
             context,
             scene.photo.image,
@@ -741,6 +803,42 @@ export default function Home() {
 
         const pad = Math.round(width * 0.085);
         if (scene.type === "opening") {
+          if (style === "triptych") {
+            const hero = loadedPhotos[0];
+            const px = Math.round(width * 0.11);
+            const pw = width - px * 2;
+            drawTriptychLayer(hero.image, hero.demoIndex, true, 0, 0, width, height);
+            drawTriptychLayer(hero.image, hero.demoIndex, false, px, 0, pw, height, 1.05);
+            // Soft dark overlay on center panel
+            context.fillStyle = "rgba(0,0,0,0.38)";
+            context.fillRect(px, 0, pw, height);
+            // Centered property info
+            context.textAlign = "center";
+            context.shadowColor = "rgba(0,0,0,0.9)";
+            context.shadowBlur = 14;
+            context.fillStyle = "rgba(255,255,255,0.72)";
+            context.font = `600 ${Math.round(width * 0.04)}px Arial, sans-serif`;
+            context.fillText(project.campaign.toUpperCase(), width / 2, height * 0.36);
+            context.fillStyle = "white";
+            const ts = fitFont(context, project.address, pw - Math.round(width * 0.08), Math.round(width * 0.075));
+            context.font = `700 ${ts}px Arial, sans-serif`;
+            context.fillText(project.address, width / 2, height * 0.43);
+            context.fillStyle = "rgba(255,255,255,0.76)";
+            context.font = `500 ${Math.round(width * 0.037)}px Arial, sans-serif`;
+            context.fillText(project.cityStateZip, width / 2, height * 0.49);
+            context.fillStyle = "white";
+            context.font = `700 ${Math.round(width * 0.058)}px Arial, sans-serif`;
+            context.fillText(project.price, width / 2, height * 0.575);
+            context.fillStyle = "rgba(255,255,255,0.85)";
+            context.font = `600 ${Math.round(width * 0.034)}px Arial, sans-serif`;
+            context.fillText(
+              `${project.beds} BED  ·  ${project.baths} BATH  ·  ${project.sqft} SQ FT`,
+              width / 2, height * 0.625,
+            );
+            context.textAlign = "left";
+            context.shadowBlur = 0;
+            return;
+          }
           const hero = loadedPhotos[0];
           drawImageCover(context, hero.image, width, height, 1.05, hero.demoIndex);
           context.fillStyle = "rgba(8,14,11,.7)";
@@ -772,6 +870,40 @@ export default function Home() {
           );
           context.fillStyle = theme.accent;
           context.fillRect(pad, height * 0.17, width * 0.14, Math.max(5, width * 0.006));
+          return;
+        }
+
+        if (style === "triptych") {
+          const leftW = Math.round(width * 0.22);
+          const centerW = width - leftW * 2;
+          const lp = loadedPhotos[loadedPhotos.length - 1];
+          const cp = loadedPhotos.length >= 2 ? loadedPhotos[loadedPhotos.length - 2] : loadedPhotos[0];
+          const rp = loadedPhotos.length >= 3 ? loadedPhotos[1] : loadedPhotos[0];
+          // Left strip (slightly darkened)
+          drawTriptychLayer(lp.image, lp.demoIndex, false, 0, 0, leftW, height);
+          context.fillStyle = "rgba(0,0,0,0.35)";
+          context.fillRect(0, 0, leftW, height);
+          // Center strip (main)
+          drawTriptychLayer(cp.image, cp.demoIndex, false, leftW, 0, centerW, height);
+          // Right strip (slightly darkened)
+          drawTriptychLayer(rp.image, rp.demoIndex, false, leftW + centerW, 0, leftW, height);
+          context.fillStyle = "rgba(0,0,0,0.35)";
+          context.fillRect(leftW + centerW, 0, leftW, height);
+          // Bottom dark bar
+          context.fillStyle = "rgba(0,0,0,0.8)";
+          context.fillRect(0, height * 0.72, width, height);
+          // Contact info centered
+          context.textAlign = "center";
+          context.shadowBlur = 0;
+          context.fillStyle = "rgba(255,255,255,0.78)";
+          context.font = `500 ${Math.round(width * 0.042)}px Arial, sans-serif`;
+          context.fillText(`Please call ${project.agentName}`, width / 2, height * 0.787);
+          context.fillStyle = "white";
+          context.font = `700 ${Math.round(width * 0.057)}px Arial, sans-serif`;
+          context.fillText(project.phone, width / 2, height * 0.851);
+          context.font = `700 ${Math.round(width * 0.044)}px Arial, sans-serif`;
+          context.fillText(project.brokerage.toUpperCase(), width / 2, height * 0.908);
+          context.textAlign = "left";
           return;
         }
 
@@ -1446,9 +1578,9 @@ export default function Home() {
 
           <div className={`device-stage ${format}`}>
             <div
-              className={`video-preview demo-${previewPhoto?.demoIndex ?? "upload"}`}
+              className={`video-preview${style === "triptych" ? " triptych-preview" : ` demo-${previewPhoto?.demoIndex ?? "upload"}`}`}
               style={
-                previewPhoto
+                previewPhoto && style !== "triptych"
                   ? {
                       backgroundImage: `url("${previewPhoto.url}")`,
                       "--preview-accent": theme.accent,
@@ -1460,9 +1592,22 @@ export default function Home() {
               {!previewPhoto && <div className="empty-preview">Add a property photo</div>}
               {previewPhoto && (
                 <>
-                  <div className="preview-vignette" />
+                  {style === "triptych" ? (
+                    <>
+                      <div
+                        className={`triptych-bg demo-${previewPhoto.demoIndex ?? "upload"}`}
+                        style={{ backgroundImage: `url("${previewPhoto.url}")` }}
+                      />
+                      <div
+                        className={`triptych-panel demo-${previewPhoto.demoIndex ?? "upload"}`}
+                        style={{ backgroundImage: `url("${previewPhoto.url}")` }}
+                      />
+                    </>
+                  ) : (
+                    <div className="preview-vignette" />
+                  )}
                   {exportMode === "social" && (
-                    <div className="preview-copy">
+                    <div className={`preview-copy${style === "triptych" ? " triptych-copy" : ""}`}>
                       <span className="preview-slide-headline">{slideText.headline}</span>
                       <p className="preview-slide-subline">{slideText.subline}</p>
                     </div>

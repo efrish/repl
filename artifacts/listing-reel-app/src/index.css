@@ -771,6 +771,110 @@ button {
   line-height: 1.5;
 }
 
+
+/* ── Triptych live preview ──────────────────────────────────────────────── */
+.triptych-preview {
+  background: #111;
+  overflow: hidden;
+  position: relative;
+}
+
+.triptych-bg {
+  filter: blur(22px) brightness(0.5) saturate(0.75);
+  inset: -8%;
+  position: absolute;
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+}
+
+.triptych-panel {
+  bottom: 0;
+  left: 11%;
+  position: absolute;
+  right: 11%;
+  top: 0;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 6px 40px rgba(0, 0, 0, 0.55);
+  z-index: 1;
+}
+
+/* Demo sprite positions for triptych layers */
+.triptych-bg.demo-0,
+.triptych-panel.demo-0 {
+  background-position: 0% 0%;
+  background-size: 300% 200%;
+}
+.triptych-bg.demo-1,
+.triptych-panel.demo-1 {
+  background-position: 50% 0%;
+  background-size: 300% 200%;
+}
+.triptych-bg.demo-2,
+.triptych-panel.demo-2 {
+  background-position: 100% 0%;
+  background-size: 300% 200%;
+}
+.triptych-bg.demo-3,
+.triptych-panel.demo-3 {
+  background-position: 0% 100%;
+  background-size: 300% 200%;
+}
+.triptych-bg.demo-4,
+.triptych-panel.demo-4 {
+  background-position: 50% 100%;
+  background-size: 300% 200%;
+}
+.triptych-bg.demo-5,
+.triptych-panel.demo-5 {
+  background-position: 100% 100%;
+  background-size: 300% 200%;
+}
+
+/* Triptych copy: centered white text with bottom gradient */
+.triptych-preview .preview-copy,
+.triptych-copy {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.72) 0%, transparent 100%);
+  bottom: 0;
+  left: 0;
+  padding: 22% 6% 6%;
+  position: absolute;
+  right: 0;
+  text-align: center;
+  z-index: 2;
+}
+
+.triptych-preview .preview-copy > *,
+.triptych-copy > * {
+  color: white;
+  display: block;
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: none;
+}
+
+.triptych-preview .preview-copy span,
+.triptych-copy span {
+  color: white;
+  font-size: clamp(11px, 1.6vw, 19px);
+  font-weight: 700;
+  letter-spacing: 0;
+  margin-bottom: 4px;
+  text-transform: none;
+}
+
+.triptych-preview .preview-copy p,
+.triptych-copy p {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: clamp(8px, 1.1vw, 13px);
+  margin: 0;
+}
+
+.triptych-preview .preview-progress {
+  z-index: 3;
+}
+
 .export-toggle {
   display: grid;
   gap: 12px;
