@@ -3,12 +3,13 @@ import {
   ClerkProvider,
   SignIn,
   SignUp,
+  useAuth,
   useClerk,
   useUser,
 } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
-import { Switch, Route, Router as WouterRouter, Redirect, useLocation } from "wouter";
+import { Switch, Route, Router as WouterRouter, Redirect, useLocation, Link } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Home from "@/pages/Home";
 import PendingApproval from "@/pages/PendingApproval";
@@ -109,6 +110,7 @@ type UserStatus = "loading" | "admin" | "approved" | "pending" | "error";
 /** Registers new users via the API and returns their status. */
 function useUserStatus(): UserStatus {
   const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
   const [status, setStatus] = useState<UserStatus>("loading");
   const didRegister = useRef(false);
 
@@ -125,14 +127,21 @@ function useUserStatus(): UserStatus {
       return;
     }
 
-    // First sign-in — provision the role via the API
+    // First sign-in — provision the role via the API.
+    // Pass the session token explicitly as a Bearer header so the Express
+    // clerkMiddleware can validate it even when proxy cookie forwarding is
+    // unreliable (Vite dev proxy → localhost).
     if (didRegister.current) return;
     didRegister.current = true;
 
-    fetch(`${API_BASE}/api/users/register`, {
-      method: "POST",
-      credentials: "include",
-    })
+    getToken()
+      .then((token) =>
+        fetch(`${API_BASE}/api/users/register`, {
+          method: "POST",
+          credentials: "include",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+      )
       .then((r) => r.json())
       .then(async (data) => {
         await user.reload();
@@ -141,7 +150,7 @@ function useUserStatus(): UserStatus {
         else setStatus("pending");
       })
       .catch(() => setStatus("error"));
-  }, [isLoaded, user]);
+  }, [isLoaded, user, getToken]);
 
   return status;
 }
@@ -198,7 +207,6 @@ function SignUpPage() {
 
 /** Landing page for signed-out visitors */
 function Landing() {
-  const [, setLocation] = useLocation();
   return (
     <div className="lr-landing">
       {/* ── NAV ─────────────────────────────────────────────────── */}
@@ -211,8 +219,8 @@ function Landing() {
           </div>
         </div>
         <div className="lr-nav-actions">
-          <button className="lr-btn-ghost" onClick={() => setLocation("/sign-in")}>Sign in</button>
-          <button className="lr-btn-primary" onClick={() => setLocation("/sign-up")}>Request access</button>
+          <Link href="/sign-in" className="lr-btn-ghost">Sign in</Link>
+          <Link href="/sign-up" className="lr-btn-primary">Request access</Link>
         </div>
       </nav>
 
@@ -230,9 +238,7 @@ function Landing() {
             Rendered entirely in your browser.
           </p>
           <div className="lr-hero-cta">
-            <button className="lr-btn-primary lr-btn-lg" onClick={() => setLocation("/sign-up")}>
-              Request access →
-            </button>
+            <Link href="/sign-up" className="lr-btn-primary lr-btn-lg">Request access →</Link>
             <span className="lr-cta-note">Approved agents only · Free for your office</span>
           </div>
           <div className="lr-trust-row">
@@ -351,9 +357,7 @@ function Landing() {
         <div className="lr-mark lr-mark-lg">LR</div>
         <h2>Ready to make your listings move?</h2>
         <p>Request access for your Century 21 Hollywood team.</p>
-        <button className="lr-btn-primary lr-btn-lg" onClick={() => setLocation("/sign-up")}>
-          Request access →
-        </button>
+        <Link href="/sign-up" className="lr-btn-primary lr-btn-lg">Request access →</Link>
       </section>
     </div>
   );

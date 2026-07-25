@@ -18,6 +18,7 @@ function requireAuth(req: any, res: any, next: any) {
  * Idempotent — safe to call on every sign-in; skips if role already set.
  */
 router.post("/users/register", requireAuth, async (req: any, res: any) => {
+
   const { userId } = req;
   try {
     const user = await clerkClient.users.getUser(userId);
