@@ -1,0 +1,1 @@
+- [Clerk Auth Setup](clerk-auth-setup.md) — request-approval auth with admin panel; ADMIN_EMAIL=efrish@c21edva.com auto-grants admin role on first sign-in.

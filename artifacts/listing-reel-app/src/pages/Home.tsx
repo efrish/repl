@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useClerk } from "@clerk/react";
 
 type Step = "photos" | "property" | "agent" | "style" | "preview" | "properties";
 type Format = "vertical" | "square" | "landscape";
@@ -457,7 +458,15 @@ async function persistProperties(list: PropertySnapshot[]): Promise<void> {
   try { await dbSave(PROPS_KEY, list); } catch { /* ignore */ }
 }
 
-export default function Home() {
+export default function Home({
+  isAdmin = false,
+  onOpenAdmin,
+}: {
+  isAdmin?: boolean;
+  onOpenAdmin?: () => void;
+} = {}) {
+  const { signOut } = useClerk();
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
   const [activeStep, setActiveStep] = useState<Step>("photos");
   const [project, setProject] = useState<Project>(initialProject);
   const [photos, setPhotos] = useState<Photo[]>(demoPhotos);
@@ -1341,6 +1350,11 @@ export default function Home() {
               <span className="prop-count">{savedProperties.length}</span>
             )}
           </button>
+          {isAdmin && onOpenAdmin && (
+            <button className="props-nav-btn admin-nav-btn" onClick={onOpenAdmin}>
+              ⚙ Users
+            </button>
+          )}
           <div className={`save-status ${saveStatus}`}>
             <span />
             {saveStatus === "saving"
@@ -1349,6 +1363,13 @@ export default function Home() {
               ? "Unsaved changes"
               : "All changes saved"}
           </div>
+          <button
+            className="topbar-signout"
+            onClick={() => signOut({ redirectUrl: basePath || "/" })}
+            title="Sign out"
+          >
+            Sign out
+          </button>
         </div>
       </header>
 
