@@ -772,6 +772,119 @@ button {
 }
 
 
+
+/* ── Platform export picker ─────────────────────────────────────────────── */
+.platform-section h2 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.platform-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.platform-card {
+  align-items: center;
+  background: var(--surface);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 6px 8px;
+  text-align: center;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+
+.platform-card:hover {
+  border-color: var(--platform-color, #888);
+  transform: translateY(-1px);
+}
+
+.platform-card.selected {
+  background: color-mix(in srgb, var(--platform-color, #888) 12%, transparent);
+  border-color: var(--platform-color, #888);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--platform-color, #888) 22%, transparent);
+}
+
+.platform-icon-badge {
+  align-items: center;
+  background: var(--platform-color, #888);
+  border-radius: 7px;
+  color: white;
+  display: flex;
+  font-size: 11px;
+  font-weight: 800;
+  height: 30px;
+  justify-content: center;
+  letter-spacing: -0.03em;
+  margin-bottom: 4px;
+  width: 30px;
+}
+
+.platform-card-label {
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.platform-card-sub {
+  color: var(--text-muted, #888);
+  font-size: 9px;
+  line-height: 1;
+}
+
+.platform-card-dim {
+  background: var(--border, #e5e5e5);
+  border-radius: 3px;
+  color: var(--text-muted, #888);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-top: 2px;
+  padding: 1px 4px;
+}
+
+.platform-card.selected .platform-card-dim {
+  background: color-mix(in srgb, var(--platform-color, #888) 20%, transparent);
+  color: var(--platform-color, #888);
+}
+
+.platform-note {
+  color: var(--text-muted, #888);
+  font-size: 12px;
+  margin-top: 10px;
+}
+
+.platform-note strong {
+  color: var(--text);
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--accent, #d5b56f);
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.link-button:hover {
+  opacity: 0.75;
+}
+
 /* ── Triptych live preview ──────────────────────────────────────────────── */
 .triptych-preview {
   background: #111;

@@ -13,6 +13,18 @@ import {
 
 type Step = "photos" | "property" | "agent" | "style" | "preview";
 type Format = "vertical" | "square" | "landscape";
+type Platform = "ig-reels" | "ig-story" | "ig-post" | "tiktok" | "facebook" | "yt-shorts" | "x-twitter" | "linkedin";
+
+const platforms: Record<Platform, { label: string; sub: string; width: number; height: number; color: string; icon: string }> = {
+  "ig-reels":  { label: "Instagram", sub: "Reels",    width: 1080, height: 1920, color: "#C13584", icon: "IG" },
+  "ig-story":  { label: "Instagram", sub: "Story",    width: 1080, height: 1920, color: "#833AB4", icon: "IG" },
+  "ig-post":   { label: "Instagram", sub: "Post",     width: 1080, height: 1080, color: "#E1306C", icon: "IG" },
+  "tiktok":    { label: "TikTok",    sub: "Video",    width: 1080, height: 1920, color: "#010101", icon: "TK" },
+  "facebook":  { label: "Facebook",  sub: "Reels",    width: 1080, height: 1920, color: "#1877F2", icon: "FB" },
+  "yt-shorts": { label: "YouTube",   sub: "Shorts",   width: 1080, height: 1920, color: "#FF0000", icon: "YT" },
+  "x-twitter": { label: "X",         sub: "Twitter",  width: 1280, height: 720,  color: "#14171A", icon: "𝕏"  },
+  "linkedin":  { label: "LinkedIn",  sub: "Video",    width: 1920, height: 1080, color: "#0A66C2", icon: "in" },
+};
 type Style = "editorial" | "modern" | "energy" | "triptych";
 type ExportMode = "social" | "mls";
 
@@ -438,6 +450,7 @@ export default function Home() {
   const [photoDragIndex, setPhotoDragIndex] = useState<number | null>(null);
   const [photoDragOver, setPhotoDragOver] = useState<number | null>(null);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
 
   const theme = styleThemes[style];
   const previewPhoto = photos[previewIndex % Math.max(photos.length, 1)];
@@ -623,7 +636,7 @@ export default function Home() {
     setRenderMessage("Preparing your photos…");
 
     try {
-      const config = formats[format];
+      const config = selectedPlatform ? platforms[selectedPlatform] : formats[format];
       const canvas = document.createElement("canvas");
       canvas.width = config.width;
       canvas.height = config.height;
@@ -673,7 +686,7 @@ export default function Home() {
         supportedTypes.find((type) => MediaRecorder.isTypeSupported(type)) || "";
       const recorder = new MediaRecorder(stream, {
         mimeType: mimeType || undefined,
-        videoBitsPerSecond: format === "landscape" ? 10_000_000 : 8_000_000,
+        videoBitsPerSecond: config.width >= config.height ? 10_000_000 : 8_000_000,
       });
       const chunks: Blob[] = [];
       recorder.ondataavailable = (event) => {
@@ -685,22 +698,22 @@ export default function Home() {
           resolve(new Blob(chunks, { type: recorder.mimeType || "video/webm" }));
       });
 
-      const photoDuration = style === "energy" ? 1300 : style === "triptych" ? 2400 : 1800;
+      const photoDuration = style === "energy" ? 1900 : style === "triptych" ? 3200 : 2600;
       const scenes =
         exportMode === "social"
           ? [
-              { type: "opening", duration: 1900 },
+              { type: "opening", duration: 2600 },
               ...loadedPhotos.map((photo, index) => ({
                 type: "photo",
                 duration: photoDuration,
                 photo,
                 index,
               })),
-              { type: "closing", duration: 2200 },
+              { type: "closing", duration: 3000 },
             ]
           : loadedPhotos.map((photo, index) => ({
               type: "photo",
-              duration: 2000,
+              duration: 3000,
               photo,
               index,
             }));
@@ -739,6 +752,38 @@ export default function Home() {
           context.restore();
         }
 
+
+        // ── Top branding overlay ──────────────────────────────────────────────
+        function drawBranding() {
+          if (exportMode !== "social") return;
+          const fs = Math.round(width * 0.033);
+          const topY = Math.round(height * 0.046);
+          const rightX = width - Math.round(width * 0.045);
+          context.save();
+          context.textAlign = "right";
+          context.shadowColor = "rgba(0,0,0,0.75)";
+          context.shadowBlur = 8;
+          // Measure widths to position the two-tone text
+          context.font = `700 ${fs}px Arial, sans-serif`;
+          const brandW = context.measureText("ListingReel").width;
+          context.font = `400 ${fs}px Arial, sans-serif`;
+          const byW = context.measureText(` by ${project.agentName}`).width;
+          const totalW = brandW + byW;
+          const startX = rightX - totalW;
+          // Draw "ListingReel" bold white
+          context.textAlign = "left";
+          context.fillStyle = "white";
+          context.font = `700 ${fs}px Arial, sans-serif`;
+          context.fillText("ListingReel", startX, topY);
+          // Draw " by [name]" lighter
+          context.fillStyle = "rgba(255,255,255,0.72)";
+          context.font = `400 ${fs}px Arial, sans-serif`;
+          context.fillText(` by ${project.agentName}`, startX + brandW, topY);
+          context.shadowBlur = 0;
+          context.textAlign = "left";
+          context.restore();
+        }
+
         if (scene.type === "photo" && "photo" in scene) {
           if (style === "triptych") {
             const { image, demoIndex } = scene.photo;
@@ -770,6 +815,7 @@ export default function Home() {
               context.textAlign = "left";
               context.shadowBlur = 0;
             }
+            drawBranding();
             return;
           }
           drawImageCover(
@@ -798,6 +844,7 @@ export default function Home() {
             context.fillStyle = theme.accent;
             context.fillRect(pad, height - pad * 1.25, width * 0.18, Math.max(4, width * 0.006));
           }
+          drawBranding();
           return;
         }
 
@@ -837,6 +884,7 @@ export default function Home() {
             );
             context.textAlign = "left";
             context.shadowBlur = 0;
+            drawBranding();
             return;
           }
           const hero = loadedPhotos[0];
@@ -870,6 +918,7 @@ export default function Home() {
           );
           context.fillStyle = theme.accent;
           context.fillRect(pad, height * 0.17, width * 0.14, Math.max(5, width * 0.006));
+          drawBranding();
           return;
         }
 
@@ -904,6 +953,7 @@ export default function Home() {
           context.font = `700 ${Math.round(width * 0.044)}px Arial, sans-serif`;
           context.fillText(project.brokerage.toUpperCase(), width / 2, height * 0.908);
           context.textAlign = "left";
+          drawBranding();
           return;
         }
 
@@ -978,6 +1028,7 @@ export default function Home() {
             logoHeight,
           );
         }
+        drawBranding();
       }
 
       recorder.start(250);
@@ -1026,7 +1077,8 @@ export default function Home() {
         "listing";
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `${safeAddress}-${exportMode}-${format}.${extension}`;
+      const platformSlug = selectedPlatform ? `${platforms[selectedPlatform].label.toLowerCase()}-${platforms[selectedPlatform].sub.toLowerCase()}` : format;
+      anchor.download = `${safeAddress}-${exportMode}-${platformSlug}.${extension}`;
       anchor.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
       setRenderProgress(100);
@@ -1505,14 +1557,46 @@ export default function Home() {
                 </button>
               </div>
 
+              <div className="option-block platform-section">
+                <h2>Export for platform</h2>
+                <div className="platform-grid">
+                  {(Object.entries(platforms) as [Platform, typeof platforms[Platform]][]).map(([id, p]) => (
+                    <button
+                      key={id}
+                      className={`platform-card${selectedPlatform === id ? " selected" : ""}`}
+                      style={{ "--platform-color": p.color } as CSSProperties}
+                      onClick={() => setSelectedPlatform(selectedPlatform === id ? null : id)}
+                    >
+                      <span className="platform-icon-badge">{p.icon}</span>
+                      <span className="platform-card-label">{p.label}</span>
+                      <span className="platform-card-sub">{p.sub}</span>
+                      <span className="platform-card-dim">
+                        {p.width < p.height ? "9∶16" : p.width === p.height ? "1∶1" : "16∶9"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {selectedPlatform && (
+                  <p className="platform-note">
+                    Exporting for <strong>{platforms[selectedPlatform].label} {platforms[selectedPlatform].sub}</strong>
+                    &nbsp;·&nbsp;{platforms[selectedPlatform].width}×{platforms[selectedPlatform].height}&nbsp;px
+                    &nbsp;·&nbsp;<button className="link-button" onClick={() => setSelectedPlatform(null)}>Clear</button>
+                  </p>
+                )}
+              </div>
+
               <div className="review-list">
                 <div>
                   <span>Photos</span>
                   <strong>{photos.length} selected</strong>
                 </div>
                 <div>
-                  <span>Format</span>
-                  <strong>{formats[format].label} HD</strong>
+                  <span>Platform</span>
+                  <strong>
+                    {selectedPlatform
+                      ? `${platforms[selectedPlatform].label} ${platforms[selectedPlatform].sub}`
+                      : `${formats[format].label} (custom)`}
+                  </strong>
                 </div>
                 <div>
                   <span>Style</span>
@@ -1641,7 +1725,7 @@ export default function Home() {
             </div>
             <div>
               <span>OUTPUT</span>
-              <strong>{formats[format].width} × {formats[format].height}</strong>
+              <strong>{(selectedPlatform ? platforms[selectedPlatform] : formats[format]).width} × {(selectedPlatform ? platforms[selectedPlatform] : formats[format]).height}</strong>
             </div>
           </div>
         </aside>
