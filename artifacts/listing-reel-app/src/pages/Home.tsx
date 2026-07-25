@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 
-type Step = "photos" | "property" | "agent" | "style" | "preview";
+type Step = "photos" | "property" | "agent" | "style" | "preview" | "properties";
 type Format = "vertical" | "square" | "landscape";
 type Platform = "ig-reels" | "ig-story" | "ig-post" | "tiktok" | "facebook" | "yt-shorts" | "x-twitter" | "linkedin";
 
@@ -32,6 +32,23 @@ function formatForPlatform(platform: Platform): Format {
 
 type Style = "editorial" | "modern" | "energy" | "triptych";
 type ExportMode = "social" | "mls";
+
+type PropertySnapshot = {
+  id: string;
+  savedAt: number;
+  project: Project;
+  photos: Photo[];
+  format: Format;
+  style: Style;
+  exportMode: ExportMode;
+  selectedPlatform: Platform;
+  headshot: string | null;
+  logo: string | null;
+  music: { name: string; url: string } | null;
+};
+
+const PROPS_KEY = "listing-reel-properties";
+const MAX_SAVED = 6;
 
 type Photo = {
   id: string;
@@ -431,6 +448,15 @@ async function blobToDataUrl(url: string): Promise<string> {
   });
 }
 
+async function loadSavedProperties(): Promise<PropertySnapshot[]> {
+  try { return (await dbLoad<PropertySnapshot[]>(PROPS_KEY)) ?? []; }
+  catch { return []; }
+}
+
+async function persistProperties(list: PropertySnapshot[]): Promise<void> {
+  try { await dbSave(PROPS_KEY, list); } catch { /* ignore */ }
+}
+
 export default function Home() {
   const [activeStep, setActiveStep] = useState<Step>("photos");
   const [project, setProject] = useState<Project>(initialProject);
@@ -457,6 +483,7 @@ export default function Home() {
   const [photoDragOver, setPhotoDragOver] = useState<number | null>(null);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>("ig-reels");
+  const [savedProperties, setSavedProperties] = useState<PropertySnapshot[]>([]);
 
   const theme = styleThemes[style];
   const previewPhoto = photos[previewIndex % Math.max(photos.length, 1)];
@@ -577,9 +604,96 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, [isPlaying, photos.length, style]);
 
+  // Load saved properties from IndexedDB on mount
+  useEffect(() => {
+    loadSavedProperties().then(setSavedProperties);
+  }, []);
+
   function choosePlatform(platform: Platform) {
     setSelectedPlatform(platform);
     setFormat(formatForPlatform(platform));
+  }
+
+  async function saveToProperties() {
+    const savedPhotos = await Promise.all(
+      photos.map(async (p) => ({
+        ...p,
+        url: p.url.startsWith("blob:") ? await blobToDataUrl(p.url) : p.url,
+      })),
+    );
+    const snap: PropertySnapshot = {
+      id: `prop-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      savedAt: Date.now(),
+      project,
+      photos: savedPhotos,
+      format,
+      style,
+      exportMode,
+      selectedPlatform,
+      headshot: headshot
+        ? (headshot.startsWith("blob:") ? await blobToDataUrl(headshot) : headshot)
+        : null,
+      logo: logo
+        ? (logo.startsWith("blob:") ? await blobToDataUrl(logo) : logo)
+        : null,
+      music: music && music.url.startsWith("blob:") ? null : music,
+    };
+    setSavedProperties((current) => {
+      // Replace existing entry with same address, otherwise prepend; cap at MAX_SAVED
+      const deduped = current.filter((p) => p.project.address !== project.address);
+      const updated = [snap, ...deduped].slice(0, MAX_SAVED);
+      persistProperties(updated);
+      return updated;
+    });
+  }
+
+  function loadProperty(snap: PropertySnapshot) {
+    photos.forEach((p) => { if (p.url.startsWith("blob:")) URL.revokeObjectURL(p.url); });
+    if (headshot?.startsWith("blob:")) URL.revokeObjectURL(headshot);
+    if (logo?.startsWith("blob:")) URL.revokeObjectURL(logo);
+    if (music?.url.startsWith("blob:")) URL.revokeObjectURL(music.url);
+    setProject({ ...initialProject, ...snap.project });
+    setPhotos(snap.photos);
+    setFormat(snap.format);
+    setStyle(snap.style);
+    setExportMode(snap.exportMode);
+    if (platforms[snap.selectedPlatform]) setSelectedPlatform(snap.selectedPlatform);
+    setHeadshot(snap.headshot);
+    setLogo(snap.logo);
+    setMusic(snap.music);
+    setPreviewIndex(0);
+    setActiveStep("photos");
+  }
+
+  function deleteProperty(id: string) {
+    setSavedProperties((current) => {
+      const updated = current.filter((p) => p.id !== id);
+      persistProperties(updated);
+      return updated;
+    });
+  }
+
+  function startNew() {
+    if (!window.confirm("Start a new listing? Your current project stays saved in My Properties if you've saved it.")) return;
+    photos.forEach((p) => { if (p.url.startsWith("blob:")) URL.revokeObjectURL(p.url); });
+    if (headshot?.startsWith("blob:")) URL.revokeObjectURL(headshot);
+    if (logo?.startsWith("blob:")) URL.revokeObjectURL(logo);
+    if (music?.url.startsWith("blob:")) URL.revokeObjectURL(music.url);
+    setProject(initialProject);
+    setPhotos([]);
+    setFormat("vertical");
+    setStyle("editorial");
+    setExportMode("social");
+    setSelectedPlatform("ig-reels");
+    setHeadshot(null);
+    setLogo(null);
+    setMusic(null);
+    setPreviewIndex(0);
+    setRenderState("idle");
+    setRenderProgress(0);
+    setRenderMessage("");
+    setUploadMessage("");
+    setActiveStep("photos");
   }
 
   function addPhotos(files: FileList | File[]) {
@@ -1191,6 +1305,7 @@ export default function Home() {
           ? "Your HD MP4 has downloaded."
           : "Your HD video has downloaded in the best format supported by this browser.",
       );
+      saveToProperties().catch(() => {});
     } catch (error) {
       console.error(error);
       setRenderState("error");
@@ -1213,13 +1328,27 @@ export default function Home() {
             <small>Property video studio</small>
           </span>
         </button>
-        <div className={`save-status ${saveStatus}`}>
-          <span />
-          {saveStatus === "saving"
-            ? "Saving…"
-            : saveStatus === "unsaved"
-            ? "Unsaved changes"
-            : "All changes saved"}
+        <div className="topbar-right">
+          <button className="new-listing-btn" onClick={startNew}>
+            + New listing
+          </button>
+          <button
+            className={`props-nav-btn${activeStep === "properties" ? " active" : ""}`}
+            onClick={() => setActiveStep(activeStep === "properties" ? "photos" : "properties")}
+          >
+            My Properties
+            {savedProperties.length > 0 && (
+              <span className="prop-count">{savedProperties.length}</span>
+            )}
+          </button>
+          <div className={`save-status ${saveStatus}`}>
+            <span />
+            {saveStatus === "saving"
+              ? "Saving…"
+              : saveStatus === "unsaved"
+              ? "Unsaved changes"
+              : "All changes saved"}
+          </div>
         </div>
       </header>
 
@@ -1754,7 +1883,67 @@ export default function Home() {
             </section>
           )}
 
-          {activeStep !== "preview" && (
+          {activeStep === "properties" && (
+            <section className="step-content">
+              <div className="section-kicker">My Properties</div>
+              <h1>Your saved listings.</h1>
+              <p className="section-intro">
+                Up to {MAX_SAVED} listings live in your browser. Load any of them to
+                pick up where you left off, or save your current project as a new entry.
+              </p>
+
+              <div className="prop-actions-bar">
+                <button className="secondary-button" onClick={() => saveToProperties()}>
+                  + Save current listing
+                </button>
+                {savedProperties.length > 0 && (
+                  <span className="prop-slot-count">
+                    {savedProperties.length} of {MAX_SAVED} slots used
+                  </span>
+                )}
+              </div>
+
+              {savedProperties.length === 0 ? (
+                <div className="prop-empty">
+                  <p>No listings saved yet. Generate a video or click "Save current listing" above — it will appear here.</p>
+                </div>
+              ) : (
+                <div className="prop-grid">
+                  {savedProperties.map((snap) => (
+                    <div key={snap.id} className="prop-card">
+                      <div
+                        className="prop-card-thumb"
+                        style={snap.photos[0] ? { backgroundImage: `url("${snap.photos[0].url}")` } : undefined}
+                      >
+                        <span className="prop-card-badge">{snap.project.campaign}</span>
+                      </div>
+                      <div className="prop-card-body">
+                        <strong className="prop-card-address">{snap.project.address}</strong>
+                        <div className="prop-card-meta">
+                          {snap.project.price}
+                          {snap.project.beds ? ` · ${snap.project.beds} bd` : ""}
+                          {snap.project.baths ? ` · ${snap.project.baths} ba` : ""}
+                        </div>
+                        <div className="prop-card-date">
+                          Saved {new Date(snap.savedAt).toLocaleDateString()}
+                        </div>
+                        <div className="prop-card-actions">
+                          <button className="primary-button" onClick={() => loadProperty(snap)}>
+                            Load
+                          </button>
+                          <button className="prop-delete-btn" onClick={() => deleteProperty(snap.id)}>
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {activeStep !== "preview" && activeStep !== "properties" && (
             <div className="editor-footer">
               <span>
                 {currentStepIndex + 1} of {steps.length}

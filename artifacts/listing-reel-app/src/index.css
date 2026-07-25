@@ -148,6 +148,186 @@ label:has(input:focus-visible) {
   width: 7px;
 }
 
+/* ── My Properties topbar button ─────────────────────────────────────────── */
+.topbar-right {
+  align-items: center;
+  display: flex;
+  gap: 20px;
+}
+
+.new-listing-btn {
+  align-items: center;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 99px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 5px;
+  padding: 7px 16px;
+  transition: opacity 150ms;
+}
+
+.new-listing-btn:hover {
+  opacity: 0.85;
+}
+
+.props-nav-btn {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  color: var(--charcoal);
+  cursor: pointer;
+  display: flex;
+  font-size: 12px;
+  font-weight: 600;
+  gap: 7px;
+  padding: 7px 16px;
+  transition: background 150ms, border-color 150ms, color 150ms;
+}
+
+.props-nav-btn:hover {
+  background: var(--stone);
+  border-color: var(--charcoal);
+}
+
+.props-nav-btn.active {
+  background: var(--charcoal);
+  border-color: var(--charcoal);
+  color: white;
+}
+
+.prop-count {
+  background: var(--accent);
+  border-radius: 99px;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 7px;
+}
+
+/* ── My Properties view ───────────────────────────────────────────────────── */
+.prop-actions-bar {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.prop-slot-count {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.prop-empty {
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  padding: 52px 32px;
+  text-align: center;
+}
+
+.prop-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.prop-card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: box-shadow 150ms, transform 150ms;
+}
+
+.prop-card:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.09);
+  transform: translateY(-2px);
+}
+
+.prop-card-thumb {
+  aspect-ratio: 16 / 10;
+  background-color: var(--stone);
+  background-position: center;
+  background-size: cover;
+  position: relative;
+}
+
+.prop-card-badge {
+  background: rgba(0, 0, 0, 0.58);
+  border-radius: 5px;
+  bottom: 9px;
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  left: 10px;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  position: absolute;
+  text-transform: uppercase;
+}
+
+.prop-card-body {
+  padding: 14px 16px 16px;
+}
+
+.prop-card-address {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 5px;
+}
+
+.prop-card-meta {
+  color: var(--ink-soft);
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.prop-card-date {
+  color: var(--ink-soft);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+
+.prop-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.prop-card-actions .primary-button {
+  flex: 1;
+  font-size: 12px;
+  min-height: 34px;
+  padding: 0 12px;
+}
+
+.prop-delete-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 12px;
+  transition: background 150ms, border-color 150ms, color 150ms;
+}
+
+.prop-delete-btn:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
 .step-nav {
   align-items: stretch;
   border-bottom: 1px solid var(--line);
