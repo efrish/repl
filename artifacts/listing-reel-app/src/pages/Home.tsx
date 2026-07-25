@@ -1034,77 +1034,100 @@ export default function Home() {
           return;
         }
 
-        context.fillStyle = theme.dark;
+        // — Closing CTA slide: last photo blurred behind a centered contact card —
+        const closingPhoto = loadedPhotos[loadedPhotos.length - 1];
+        drawImageCover(context, closingPhoto.image, width, height, 1.18, closingPhoto.demoIndex);
+        context.fillStyle = "rgba(0,0,0,0.72)";
         context.fillRect(0, 0, width, height);
-        context.fillStyle = theme.accent;
-        context.fillRect(pad, height * 0.14, width * 0.15, Math.max(5, width * 0.006));
-        context.fillStyle = theme.light;
-        context.font = `700 ${Math.round(width * 0.055)}px Arial, sans-serif`;
-        context.fillText(project.cta, pad, height * 0.25);
-        context.fillStyle = "rgba(255,255,255,.68)";
-        context.font = `400 ${Math.round(width * 0.03)}px Arial, sans-serif`;
-        wrapText(
-          context,
-          project.description,
-          pad,
-          height * 0.33,
-          width - pad * 2,
-          Math.round(width * 0.044),
-          3,
-        );
 
-        const photoSize = Math.round(width * 0.17);
+        const cx = width / 2;
+        context.textAlign = "center";
+        context.shadowColor = "rgba(0,0,0,0.55)";
+        context.shadowBlur = 8;
+
+        // Accent rule
+        const ruleW = Math.round(width * 0.13);
+        context.fillStyle = theme.accent;
+        context.fillRect(cx - ruleW / 2, height * 0.11, ruleW, Math.max(4, Math.round(width * 0.005)));
+
+        // CTA headline
+        context.fillStyle = theme.light;
+        context.font = `700 ${Math.round(width * 0.048)}px Arial, sans-serif`;
+        context.fillText(project.cta, cx, height * 0.20);
+
+        // Headshot — centered circle
+        const hsSize = Math.round(Math.min(width, height) * 0.17);
+        const hsTop = height * 0.26;
         if (loadedHeadshot) {
           context.save();
-          context.translate(pad, height * 0.64);
+          context.shadowBlur = 0;
+          context.translate(cx - hsSize / 2, hsTop);
           context.beginPath();
-          context.arc(
-            photoSize / 2,
-            photoSize / 2,
-            photoSize / 2,
-            0,
-            Math.PI * 2,
-          );
+          context.arc(hsSize / 2, hsSize / 2, hsSize / 2, 0, Math.PI * 2);
           context.clip();
-          drawImageCover(
-            context,
-            loadedHeadshot,
-            photoSize,
-            photoSize,
-            1,
-          );
+          drawImageCover(context, loadedHeadshot, hsSize, hsSize, 1);
           context.restore();
+          context.shadowColor = "rgba(0,0,0,0.55)";
+          context.shadowBlur = 8;
         }
-        const agentX = loadedHeadshot ? pad + photoSize + pad * 0.4 : pad;
+
+        // Vertical rhythm adapts to headshot presence
+        const nameY   = loadedHeadshot ? hsTop + hsSize + height * 0.07 : height * 0.37;
+        const titleY  = nameY  + height * 0.055;
+        const phoneY  = titleY + height * 0.085;
+        const emailY  = phoneY + height * 0.055;
+        const licenseY = emailY + (project.website.trim() ? height * 0.042 : height * 0.042);
+        const websiteY = emailY + height * 0.042;
+
+        // Agent name
         context.fillStyle = theme.light;
-        context.font = `700 ${Math.round(width * 0.043)}px Arial, sans-serif`;
-        context.fillText(project.agentName, agentX, height * 0.69);
+        context.font = `700 ${Math.round(width * 0.046)}px Arial, sans-serif`;
+        context.fillText(project.agentName, cx, nameY);
+
+        // Title · Brokerage
         context.fillStyle = theme.accent;
-        context.font = `600 ${Math.round(width * 0.027)}px Arial, sans-serif`;
-        context.fillText(
-          `${project.agentTitle} · ${project.brokerage}`,
-          agentX,
-          height * 0.735,
-        );
-        context.fillStyle = "rgba(255,255,255,.78)";
-        context.font = `500 ${Math.round(width * 0.027)}px Arial, sans-serif`;
-        context.fillText(
-          `${project.phone}  ·  ${project.email}`,
-          agentX,
-          height * 0.78,
-        );
-        context.fillText(project.license, agentX, height * 0.82);
-        if (loadedLogo) {
-          const logoWidth = width * 0.2;
-          const logoHeight = logoWidth * (loadedLogo.height / loadedLogo.width);
-          context.drawImage(
-            loadedLogo,
-            width - pad - logoWidth,
-            height - pad - logoHeight,
-            logoWidth,
-            logoHeight,
-          );
+        context.font = `600 ${Math.round(width * 0.026)}px Arial, sans-serif`;
+        const titleLine = [project.agentTitle, project.brokerage].filter(Boolean).join("  ·  ");
+        context.fillText(titleLine, cx, titleY);
+
+        // Phone — hero element
+        context.fillStyle = theme.light;
+        context.font = `700 ${Math.round(width * 0.052)}px Arial, sans-serif`;
+        context.fillText(project.phone, cx, phoneY);
+
+        // Email
+        if (project.email.trim()) {
+          context.fillStyle = "rgba(255,255,255,0.7)";
+          context.font = `400 ${Math.round(width * 0.026)}px Arial, sans-serif`;
+          context.fillText(project.email, cx, emailY);
         }
+
+        // Website (accent) or License (subdued) — whichever is present
+        if (project.website.trim()) {
+          context.fillStyle = theme.accent;
+          context.font = `500 ${Math.round(width * 0.026)}px Arial, sans-serif`;
+          context.fillText(project.website, cx, websiteY);
+          if (project.license.trim()) {
+            context.fillStyle = "rgba(255,255,255,0.38)";
+            context.font = `400 ${Math.round(width * 0.020)}px Arial, sans-serif`;
+            context.fillText(project.license, cx, licenseY + height * 0.042);
+          }
+        } else if (project.license.trim()) {
+          context.fillStyle = "rgba(255,255,255,0.38)";
+          context.font = `400 ${Math.round(width * 0.020)}px Arial, sans-serif`;
+          context.fillText(project.license, cx, licenseY);
+        }
+
+        // Logo — bottom-right
+        if (loadedLogo) {
+          context.shadowBlur = 0;
+          const logoWidth = Math.round(width * 0.18);
+          const logoHeight = Math.round(logoWidth * (loadedLogo.height / loadedLogo.width));
+          context.drawImage(loadedLogo, width - pad - logoWidth, height - pad - logoHeight, logoWidth, logoHeight);
+        }
+
+        context.shadowBlur = 0;
+        context.textAlign = "left";
         drawBranding();
       }
 
