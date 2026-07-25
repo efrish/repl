@@ -101,6 +101,25 @@ button {
   display: flex;
   font-size: 12px;
   gap: 8px;
+  transition: color 300ms ease;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.save-status.saving > span,
+.save-status.unsaved > span {
+  animation: pulse-dot 1.2s ease infinite;
+}
+
+.save-status.saving > span {
+  background: #d5b56f;
+}
+
+.save-status.unsaved > span {
+  background: #e07b54;
 }
 
 .save-status span {
@@ -330,10 +349,30 @@ button {
 
 .photo-card {
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1.5px solid var(--line);
   border-radius: 14px;
+  cursor: grab;
   min-width: 0;
   overflow: hidden;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+  user-select: none;
+}
+
+.photo-card:active {
+  cursor: grabbing;
+}
+
+.photo-card.photo-dragging {
+  cursor: grabbing;
+  opacity: 0.3;
+}
+
+.photo-card.photo-drag-over {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(213, 181, 111, 0.25), 0 4px 16px rgba(0,0,0,0.1);
 }
 
 .photo-image {

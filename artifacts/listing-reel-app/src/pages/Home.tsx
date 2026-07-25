@@ -366,6 +366,47 @@ function wrapText(
   return lines.length;
 }
 
+// ── IndexedDB helpers ────────────────────────────────────────────────────────
+function openDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("listing-reel", 1);
+    req.onupgradeneeded = () => { req.result.createObjectStore("projects"); };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function dbSave(key: string, value: unknown): Promise<void> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("projects", "readwrite");
+    tx.objectStore("projects").put(value, key);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  });
+}
+
+async function dbLoad<T>(key: string): Promise<T | null> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("projects", "readonly");
+    const req = tx.objectStore("projects").get(key);
+    req.onsuccess = () => { db.close(); resolve((req.result as T) ?? null); };
+    req.onerror = () => { db.close(); reject(req.error); };
+  });
+}
+
+async function blobToDataUrl(url: string): Promise<string> {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 export default function Home() {
   const [activeStep, setActiveStep] = useState<Step>("photos");
   const [project, setProject] = useState<Project>(initialProject);
@@ -385,6 +426,11 @@ export default function Home() {
   const [renderProgress, setRenderProgress] = useState(0);
   const [renderMessage, setRenderMessage] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
+  const saveTimer = useRef<number | null>(null);
+  const hasLoaded = useRef(false);
+  const [photoDragIndex, setPhotoDragIndex] = useState<number | null>(null);
+  const [photoDragOver, setPhotoDragOver] = useState<number | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
 
   const theme = styleThemes[style];
   const previewPhoto = photos[previewIndex % Math.max(photos.length, 1)];
@@ -412,20 +458,76 @@ export default function Home() {
     setProject((current) => ({ ...current, [key]: value }));
   }, []);
 
+  // Load full project from IndexedDB on mount
   useEffect(() => {
-    const saved = window.localStorage.getItem("listing-reel-project");
-    if (saved) {
+    type Saved = {
+      project?: Partial<Project>;
+      format?: Format;
+      style?: Style;
+      exportMode?: ExportMode;
+      photos?: Photo[];
+      headshot?: string | null;
+      logo?: string | null;
+      music?: { name: string; url: string } | null;
+    };
+    (async () => {
       try {
-        setProject({ ...initialProject, ...JSON.parse(saved) });
-      } catch {
-        window.localStorage.removeItem("listing-reel-project");
-      }
-    }
+        const saved = await dbLoad<Saved>("listing-reel-v1");
+        if (saved) {
+          if (saved.project) setProject({ ...initialProject, ...saved.project });
+          if (saved.format) setFormat(saved.format);
+          if (saved.style) setStyle(saved.style);
+          if (saved.exportMode) setExportMode(saved.exportMode);
+          if (saved.photos?.length) setPhotos(saved.photos);
+          if (saved.headshot !== undefined) setHeadshot(saved.headshot);
+          if (saved.logo !== undefined) setLogo(saved.logo);
+          if (saved.music !== undefined) setMusic(saved.music);
+        } else {
+          // Migrate from old localStorage save
+          const lsData = window.localStorage.getItem("listing-reel-project");
+          if (lsData) {
+            try { setProject({ ...initialProject, ...JSON.parse(lsData) }); } catch { /* ignore */ }
+          }
+        }
+      } catch { /* ignore */ }
+      hasLoaded.current = true;
+    })();
   }, []);
 
+  // Auto-save full project to IndexedDB (debounced 1.5 s)
   useEffect(() => {
-    window.localStorage.setItem("listing-reel-project", JSON.stringify(project));
-  }, [project]);
+    if (!hasLoaded.current) return;
+    setSaveStatus("unsaved");
+    if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(async () => {
+      setSaveStatus("saving");
+      try {
+        const savedPhotos = await Promise.all(
+          photos.map(async (p) => ({
+            ...p,
+            url: p.url.startsWith("blob:") ? await blobToDataUrl(p.url) : p.url,
+          })),
+        );
+        await dbSave("listing-reel-v1", {
+          project,
+          format,
+          style,
+          exportMode,
+          photos: savedPhotos,
+          headshot: headshot
+            ? headshot.startsWith("blob:") ? await blobToDataUrl(headshot) : headshot
+            : null,
+          logo: logo
+            ? logo.startsWith("blob:") ? await blobToDataUrl(logo) : logo
+            : null,
+          music: music && music.url.startsWith("blob:") ? null : music,
+        });
+        setSaveStatus("saved");
+      } catch {
+        setSaveStatus("unsaved");
+      }
+    }, 1500);
+  }, [project, format, style, exportMode, photos, headshot, logo, music]);
 
   useEffect(() => {
     if (!isPlaying || photos.length < 2) return;
@@ -824,9 +926,13 @@ export default function Home() {
             <small>Property video studio</small>
           </span>
         </button>
-        <div className="save-status">
+        <div className={`save-status ${saveStatus}`}>
           <span />
-          Project details saved on this device
+          {saveStatus === "saving"
+            ? "Saving…"
+            : saveStatus === "unsaved"
+            ? "Unsaved changes"
+            : "All changes saved"}
         </div>
       </header>
 
@@ -859,7 +965,7 @@ export default function Home() {
                 className={`dropzone ${isDragging ? "dragging" : ""}`}
                 onDragOver={(event) => {
                   event.preventDefault();
-                  setIsDragging(true);
+                  if (event.dataTransfer.types.includes("Files")) setIsDragging(true);
                 }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
@@ -894,7 +1000,37 @@ export default function Home() {
               </div>
               <div className="photo-grid">
                 {photos.map((photo, index) => (
-                  <div className="photo-card" key={photo.id}>
+                  <div
+                    key={photo.id}
+                    className={`photo-card${photoDragOver === index ? " photo-drag-over" : ""}${photoDragIndex === index ? " photo-dragging" : ""}`}
+                    draggable
+                    onDragStart={(e) => {
+                      setPhotoDragIndex(index);
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      if (photoDragOver !== index) setPhotoDragOver(index);
+                    }}
+                    onDragLeave={() => setPhotoDragOver(null)}
+                    onDrop={() => {
+                      if (photoDragIndex !== null && photoDragIndex !== index) {
+                        setPhotos((prev) => {
+                          const next = [...prev];
+                          const [item] = next.splice(photoDragIndex, 1);
+                          next.splice(index, 0, item);
+                          return next;
+                        });
+                      }
+                      setPhotoDragIndex(null);
+                      setPhotoDragOver(null);
+                    }}
+                    onDragEnd={() => {
+                      setPhotoDragIndex(null);
+                      setPhotoDragOver(null);
+                    }}
+                  >
                     <div
                       className={`photo-image demo-${photo.demoIndex ?? "upload"}`}
                       style={{
