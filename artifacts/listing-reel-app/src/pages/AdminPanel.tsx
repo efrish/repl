@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useClerk } from "@clerk/react";
 
 interface AppUser {
@@ -90,7 +91,7 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
       ? approved
       : users;
 
-  return (
+  return createPortal(
     <div className="admin-overlay">
       <div className="admin-panel">
         {/* Header */}
@@ -243,6 +244,7 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

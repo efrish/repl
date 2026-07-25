@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ClerkProvider,
   SignIn,
@@ -234,6 +234,8 @@ function ProtectedApp() {
   const { user, isLoaded } = useUser();
   const status = useUserStatus();
   const [showAdmin, setShowAdmin] = useState(false);
+  const openAdmin = useCallback(() => setShowAdmin(true), []);
+  const closeAdmin = useCallback(() => setShowAdmin(false), []);
 
   if (!isLoaded || (user && status === "loading")) {
     return (
@@ -253,12 +255,12 @@ function ProtectedApp() {
     <>
       <Home
         isAdmin={status === "admin"}
-        onOpenAdmin={() => setShowAdmin(true)}
+        onOpenAdmin={openAdmin}
       />
       {showAdmin && status === "admin" && (
         <AdminPanel
           apiBase={API_BASE}
-          onClose={() => setShowAdmin(false)}
+          onClose={closeAdmin}
         />
       )}
     </>

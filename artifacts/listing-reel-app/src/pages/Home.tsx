@@ -458,13 +458,13 @@ async function persistProperties(list: PropertySnapshot[]): Promise<void> {
   try { await dbSave(PROPS_KEY, list); } catch { /* ignore */ }
 }
 
-export default function Home({
+function Home({
   isAdmin = false,
   onOpenAdmin,
 }: {
   isAdmin?: boolean;
   onOpenAdmin?: () => void;
-} = {}) {
+}) {
   const { signOut } = useClerk();
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
   const [activeStep, setActiveStep] = useState<Step>("photos");
@@ -2065,3 +2065,5 @@ export default function Home({
     </main>
   );
 }
+
+export default Home;
