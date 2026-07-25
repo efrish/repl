@@ -6,3 +6,9 @@ id = "X9L99tFLEciLTYY7mxr2F"
 uri = "file://listing-reel-app.zip"
 type = "unspecified"
 title = "ListingReel – Source Code"
+
+[[outputs]]
+id = "qoL98q_Li27G6YcKHNztO"
+uri = "file://listreel-complete.zip"
+type = "unspecified"
+title = "ListingReel – Complete Project ZIP"
