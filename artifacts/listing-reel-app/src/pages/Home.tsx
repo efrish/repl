@@ -1,5 +1,3 @@
-import React from 'react';
-
 import {
   CSSProperties,
   ChangeEvent,
@@ -25,6 +23,13 @@ const platforms: Record<Platform, { label: string; sub: string; width: number; h
   "x-twitter": { label: "X",         sub: "Twitter",  width: 1280, height: 720,  color: "#14171A", icon: "𝕏"  },
   "linkedin":  { label: "LinkedIn",  sub: "Video",    width: 1920, height: 1080, color: "#0A66C2", icon: "in" },
 };
+
+function formatForPlatform(platform: Platform): Format {
+  const { width, height } = platforms[platform];
+  if (width === height) return "square";
+  return width > height ? "landscape" : "vertical";
+}
+
 type Style = "editorial" | "modern" | "energy" | "triptych";
 type ExportMode = "social" | "mls";
 
@@ -444,13 +449,14 @@ export default function Home() {
   >("idle");
   const [renderProgress, setRenderProgress] = useState(0);
   const [renderMessage, setRenderMessage] = useState("");
+  const [uploadMessage, setUploadMessage] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<number | null>(null);
   const hasLoaded = useRef(false);
   const [photoDragIndex, setPhotoDragIndex] = useState<number | null>(null);
   const [photoDragOver, setPhotoDragOver] = useState<number | null>(null);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
-  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform>("ig-reels");
 
   const theme = styleThemes[style];
   const previewPhoto = photos[previewIndex % Math.max(photos.length, 1)];
@@ -474,6 +480,13 @@ export default function Home() {
     [previewIndex, photos.length, project, highlightList],
   );
 
+  const estimatedDuration = useMemo(() => {
+    if (!photos.length) return 0;
+    if (exportMode === "mls") return Math.round(photos.length * 3);
+    const photoSeconds = style === "energy" ? 1.9 : style === "triptych" ? 3.2 : 2.6;
+    return Math.round(2.6 + photos.length * photoSeconds + 3);
+  }, [exportMode, photos.length, style]);
+
   const updateProject = useCallback((key: keyof Project, value: string) => {
     setProject((current) => ({ ...current, [key]: value }));
   }, []);
@@ -485,6 +498,7 @@ export default function Home() {
       format?: Format;
       style?: Style;
       exportMode?: ExportMode;
+      selectedPlatform?: Platform;
       photos?: Photo[];
       headshot?: string | null;
       logo?: string | null;
@@ -498,6 +512,10 @@ export default function Home() {
           if (saved.format) setFormat(saved.format);
           if (saved.style) setStyle(saved.style);
           if (saved.exportMode) setExportMode(saved.exportMode);
+          if (saved.selectedPlatform && platforms[saved.selectedPlatform]) {
+            setSelectedPlatform(saved.selectedPlatform);
+            setFormat(formatForPlatform(saved.selectedPlatform));
+          }
           if (saved.photos?.length) setPhotos(saved.photos);
           if (saved.headshot !== undefined) setHeadshot(saved.headshot);
           if (saved.logo !== undefined) setLogo(saved.logo);
@@ -533,6 +551,7 @@ export default function Home() {
           format,
           style,
           exportMode,
+          selectedPlatform,
           photos: savedPhotos,
           headshot: headshot
             ? headshot.startsWith("blob:") ? await blobToDataUrl(headshot) : headshot
@@ -547,7 +566,7 @@ export default function Home() {
         setSaveStatus("unsaved");
       }
     }, 1500);
-  }, [project, format, style, exportMode, photos, headshot, logo, music]);
+  }, [project, format, style, exportMode, selectedPlatform, photos, headshot, logo, music]);
 
   useEffect(() => {
     if (!isPlaying || photos.length < 2) return;
@@ -558,14 +577,45 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, [isPlaying, photos.length, style]);
 
+  function choosePlatform(platform: Platform) {
+    setSelectedPlatform(platform);
+    setFormat(formatForPlatform(platform));
+  }
+
   function addPhotos(files: FileList | File[]) {
-    const incoming = Array.from(files)
+    const selectedFiles = Array.from(files);
+    const heicCount = selectedFiles.filter((file) => /\.(heic|heif)$/i.test(file.name)).length;
+    const oversizedCount = selectedFiles.filter((file) => file.size > 25 * 1024 * 1024).length;
+    const incoming = selectedFiles
       .filter(
         (file) =>
-          file.type.startsWith("image/") || /\.(heic|heif)$/i.test(file.name),
+          file.size <= 25 * 1024 * 1024 &&
+          (["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+            /\.(jpe?g|png|webp)$/i.test(file.name)),
       )
       .slice(0, 6);
-    if (!incoming.length) return;
+
+    if (!incoming.length) {
+      setUploadMessage(
+        heicCount
+          ? "HEIC photos are not browser-safe for video export yet. On your phone, choose “Most Compatible” or export the photos as JPG."
+          : oversizedCount
+            ? "Each photo must be 25 MB or smaller."
+            : "Choose JPG, PNG, or WebP property photos.",
+      );
+      return;
+    }
+
+    if (selectedFiles.length > 6) {
+      setUploadMessage("The first six compatible photos were added. ListingReel uses a maximum of six.");
+    } else if (heicCount || oversizedCount) {
+      setUploadMessage(
+        `${heicCount ? `${heicCount} HEIC photo${heicCount === 1 ? " was" : "s were"} skipped. ` : ""}${oversizedCount ? `${oversizedCount} oversized photo${oversizedCount === 1 ? " was" : "s were"} skipped.` : ""}`.trim(),
+      );
+    } else {
+      setUploadMessage(`${incoming.length} photo${incoming.length === 1 ? "" : "s"} ready.`);
+    }
+
     photos.forEach((photo) => {
       if (photo.url.startsWith("blob:")) URL.revokeObjectURL(photo.url);
     });
@@ -611,11 +661,19 @@ export default function Home() {
 
   function uploadSingle(
     event: ChangeEvent<HTMLInputElement>,
+    currentValue: string | null,
     setter: (value: string | null) => void,
   ) {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadMessage("Headshots and logos must be 10 MB or smaller.");
+      event.target.value = "";
+      return;
+    }
+    if (currentValue?.startsWith("blob:")) URL.revokeObjectURL(currentValue);
     setter(URL.createObjectURL(file));
+    setUploadMessage(`${file.name} added.`);
     event.target.value = "";
   }
 
@@ -623,6 +681,25 @@ export default function Home() {
     if (!photos.length) {
       setRenderState("error");
       setRenderMessage("Add at least one property photo first.");
+      return;
+    }
+    const missingPropertyFacts = [
+      !project.address.trim() && "property address",
+      !project.price.trim() && "listing price",
+      !project.beds.trim() && "bedrooms",
+      !project.baths.trim() && "bathrooms",
+    ].filter(Boolean);
+    if (missingPropertyFacts.length) {
+      setRenderState("error");
+      setRenderMessage(`Complete the ${missingPropertyFacts.join(", ")} before exporting.`);
+      return;
+    }
+    if (
+      exportMode === "social" &&
+      (!project.agentName.trim() || !project.phone.trim())
+    ) {
+      setRenderState("error");
+      setRenderMessage("Add the agent name and phone number before creating a branded social video.");
       return;
     }
     if (typeof MediaRecorder === "undefined") {
@@ -636,7 +713,7 @@ export default function Home() {
     setRenderMessage("Preparing your photos…");
 
     try {
-      const config = selectedPlatform ? platforms[selectedPlatform] : formats[format];
+      const config = platforms[selectedPlatform];
       const canvas = document.createElement("canvas");
       canvas.width = config.width;
       canvas.height = config.height;
@@ -1070,6 +1147,7 @@ export default function Home() {
       audioElement?.pause();
       await audioContext?.close();
       const blob = await finish;
+      tracks.forEach((track) => track.stop());
       const url = URL.createObjectURL(blob);
       const extension = blob.type.includes("mp4") ? "mp4" : "webm";
       const safeAddress =
@@ -1077,9 +1155,11 @@ export default function Home() {
         "listing";
       const anchor = document.createElement("a");
       anchor.href = url;
-      const platformSlug = selectedPlatform ? `${platforms[selectedPlatform].label.toLowerCase()}-${platforms[selectedPlatform].sub.toLowerCase()}` : format;
+      const platformSlug = `${platforms[selectedPlatform].label.toLowerCase()}-${platforms[selectedPlatform].sub.toLowerCase()}`;
       anchor.download = `${safeAddress}-${exportMode}-${platformSlug}.${extension}`;
+      document.body.appendChild(anchor);
       anchor.click();
+      anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
       setRenderProgress(100);
       setRenderState("complete");
@@ -1103,7 +1183,7 @@ export default function Home() {
   return (
     <main className="app-shell" style={{ "--accent": theme.accent } as CSSProperties}>
       <header className="topbar">
-        <button className="brand" onClick={() => setActiveStep("photos")}>
+        <button className="brand" onClick={() => setActiveStep("photos")} aria-label="ListingReel home">
           <span className="brand-mark">LR</span>
           <span>
             <strong>ListingReel</strong>
@@ -1126,6 +1206,7 @@ export default function Home() {
             key={step.id}
             className={activeStep === step.id ? "active" : ""}
             onClick={() => setActiveStep(step.id)}
+            aria-current={activeStep === step.id ? "step" : undefined}
           >
             <span>{step.number}</span>
             {step.label}
@@ -1156,19 +1237,25 @@ export default function Home() {
               >
                 <div className="upload-symbol">+</div>
                 <strong>Drop your MLS photos here</strong>
-                <span>JPG, PNG, WEBP or HEIC · maximum 6 photos</span>
-                <button className="secondary-button" onClick={() => fileInput.current?.click()}>
+                <span>JPG, PNG or WebP · maximum 6 photos · 25 MB each</span>
+                <button type="button" className="secondary-button" onClick={() => fileInput.current?.click()}>
                   Choose photos
                 </button>
                 <input
                   ref={fileInput}
                   type="file"
-                  accept="image/*,.heic,.heif"
+                  accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                   multiple
                   hidden
+                  aria-label="Choose up to six property photos"
                   onChange={handleUpload}
                 />
               </div>
+              {uploadMessage && (
+                <p className="upload-message" role="status" aria-live="polite">
+                  {uploadMessage}
+                </p>
+              )}
 
               <div className="photo-header">
                 <span>{photos.length} of 6 photos</span>
@@ -1351,7 +1438,7 @@ export default function Home() {
                 MLS-safe export automatically removes all branding.
               </p>
               <div className="brand-uploads">
-                <label>
+                <label className="brand-upload-card" htmlFor="headshot-upload">
                   <span
                     className="round-upload"
                     style={headshot ? { backgroundImage: `url("${headshot}")` } : {}}
@@ -1360,14 +1447,17 @@ export default function Home() {
                   </span>
                   <strong>Agent headshot</strong>
                   <small>Square JPG or PNG</small>
+                  <span className="upload-action">{headshot ? "Replace headshot" : "Choose headshot"}</span>
                   <input
+                    id="headshot-upload"
                     type="file"
-                    accept="image/*"
-                    hidden
-                    onChange={(event) => uploadSingle(event, setHeadshot)}
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    className="visually-hidden"
+                    aria-label="Upload agent headshot"
+                    onChange={(event) => uploadSingle(event, headshot, setHeadshot)}
                   />
                 </label>
-                <label>
+                <label className="brand-upload-card" htmlFor="logo-upload">
                   <span
                     className="logo-upload"
                     style={logo ? { backgroundImage: `url("${logo}")` } : {}}
@@ -1376,14 +1466,22 @@ export default function Home() {
                   </span>
                   <strong>Brokerage logo</strong>
                   <small>PNG with transparent background</small>
+                  <span className="upload-action">{logo ? "Replace logo" : "Choose logo"}</span>
                   <input
+                    id="logo-upload"
                     type="file"
-                    accept="image/*"
-                    hidden
-                    onChange={(event) => uploadSingle(event, setLogo)}
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    className="visually-hidden"
+                    aria-label="Upload brokerage logo"
+                    onChange={(event) => uploadSingle(event, logo, setLogo)}
                   />
                 </label>
               </div>
+              {uploadMessage && (
+                <p className="upload-message" role="status" aria-live="polite">
+                  {uploadMessage}
+                </p>
+              )}
               <div className="form-grid">
                 <Field
                   label="Agent name"
@@ -1450,6 +1548,7 @@ export default function Home() {
                       key={item}
                       className={style === item ? "selected" : ""}
                       onClick={() => setStyle(item)}
+                      aria-pressed={style === item}
                     >
                       <span
                         className="style-swatch"
@@ -1464,18 +1563,26 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="option-block">
-                <h2>Video format</h2>
-                <div className="format-options">
-                  {(Object.keys(formats) as Format[]).map((item) => (
+              <div className="option-block platform-section">
+                <h2>Where will you post it?</h2>
+                <p className="option-help">
+                  Choose once—ListingReel will use the correct video size automatically.
+                </p>
+                <div className="platform-grid">
+                  {(Object.entries(platforms) as [Platform, typeof platforms[Platform]][]).map(([id, platform]) => (
                     <button
-                      key={item}
-                      className={format === item ? "selected" : ""}
-                      onClick={() => setFormat(item)}
+                      key={id}
+                      className={`platform-card${selectedPlatform === id ? " selected" : ""}`}
+                      style={{ "--platform-color": platform.color } as CSSProperties}
+                      onClick={() => choosePlatform(id)}
+                      aria-pressed={selectedPlatform === id}
                     >
-                      <span className={`format-shape ${item}`} />
-                      <strong>{formats[item].label}</strong>
-                      <small>{formats[item].detail}</small>
+                      <span className="platform-icon-badge">{platform.icon}</span>
+                      <span className="platform-card-label">{platform.label}</span>
+                      <span className="platform-card-sub">{platform.sub}</span>
+                      <span className="platform-card-dim">
+                        {platform.width < platform.height ? "9∶16" : platform.width === platform.height ? "1∶1" : "16∶9"}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -1488,6 +1595,7 @@ export default function Home() {
                     <button
                       key={track.id}
                       className={`music-preset${music?.url === track.url ? " selected" : ""}`}
+                      aria-pressed={music?.url === track.url}
                       onClick={() =>
                         setMusic(
                           music?.url === track.url
@@ -1512,21 +1620,35 @@ export default function Home() {
                       exports are always silent.
                     </small>
                   </div>
-                  <label className="secondary-button">
+                  <label className="secondary-button" htmlFor="custom-music-upload">
                     {music && music.url.startsWith("blob:") ? "Replace track" : "Upload custom"}
                     <input
+                      id="custom-music-upload"
                       type="file"
                       accept="audio/*"
-                      hidden
+                      className="visually-hidden"
+                      aria-label="Upload a licensed music track"
                       onChange={(event) => {
                         const file = event.target.files?.[0];
                         if (!file) return;
+                        if (file.size > 25 * 1024 * 1024) {
+                          setUploadMessage("Music files must be 25 MB or smaller.");
+                          event.target.value = "";
+                          return;
+                        }
+                        if (music?.url.startsWith("blob:")) URL.revokeObjectURL(music.url);
                         setMusic({ name: file.name, url: URL.createObjectURL(file) });
+                        setUploadMessage(`${file.name} selected.`);
                         event.target.value = "";
                       }}
                     />
                   </label>
                 </div>
+                {uploadMessage && (
+                  <p className="upload-message" role="status" aria-live="polite">
+                    {uploadMessage}
+                  </p>
+                )}
               </div>
             </section>
           )}
@@ -1544,6 +1666,7 @@ export default function Home() {
                 <button
                   className={exportMode === "social" ? "selected" : ""}
                   onClick={() => setExportMode("social")}
+                  aria-pressed={exportMode === "social"}
                 >
                   <strong>Branded social</strong>
                   <small>Agent, facts, CTA and optional music</small>
@@ -1551,38 +1674,11 @@ export default function Home() {
                 <button
                   className={exportMode === "mls" ? "selected" : ""}
                   onClick={() => setExportMode("mls")}
+                  aria-pressed={exportMode === "mls"}
                 >
                   <strong>MLS-safe</strong>
                   <small>Property-only, unbranded and silent</small>
                 </button>
-              </div>
-
-              <div className="option-block platform-section">
-                <h2>Export for platform</h2>
-                <div className="platform-grid">
-                  {(Object.entries(platforms) as [Platform, typeof platforms[Platform]][]).map(([id, p]) => (
-                    <button
-                      key={id}
-                      className={`platform-card${selectedPlatform === id ? " selected" : ""}`}
-                      style={{ "--platform-color": p.color } as CSSProperties}
-                      onClick={() => setSelectedPlatform(selectedPlatform === id ? null : id)}
-                    >
-                      <span className="platform-icon-badge">{p.icon}</span>
-                      <span className="platform-card-label">{p.label}</span>
-                      <span className="platform-card-sub">{p.sub}</span>
-                      <span className="platform-card-dim">
-                        {p.width < p.height ? "9∶16" : p.width === p.height ? "1∶1" : "16∶9"}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                {selectedPlatform && (
-                  <p className="platform-note">
-                    Exporting for <strong>{platforms[selectedPlatform].label} {platforms[selectedPlatform].sub}</strong>
-                    &nbsp;·&nbsp;{platforms[selectedPlatform].width}×{platforms[selectedPlatform].height}&nbsp;px
-                    &nbsp;·&nbsp;<button className="link-button" onClick={() => setSelectedPlatform(null)}>Clear</button>
-                  </p>
-                )}
               </div>
 
               <div className="review-list">
@@ -1592,11 +1688,7 @@ export default function Home() {
                 </div>
                 <div>
                   <span>Platform</span>
-                  <strong>
-                    {selectedPlatform
-                      ? `${platforms[selectedPlatform].label} ${platforms[selectedPlatform].sub}`
-                      : `${formats[format].label} (custom)`}
-                  </strong>
+                  <strong>{platforms[selectedPlatform].label} {platforms[selectedPlatform].sub}</strong>
                 </div>
                 <div>
                   <span>Style</span>
@@ -1610,6 +1702,10 @@ export default function Home() {
                 </div>
               </div>
 
+              <p className="render-tip">
+                Rendering takes about {estimatedDuration} seconds. Keep this tab open
+                until the download begins.
+              </p>
               <button
                 className="render-button"
                 onClick={renderVideo}
@@ -1620,7 +1716,7 @@ export default function Home() {
                   : `Generate ${exportMode === "mls" ? "MLS-safe" : "social"} video`}
               </button>
               {renderState !== "idle" && (
-                <div className={`render-status ${renderState}`}>
+                <div className={`render-status ${renderState}`} role="status" aria-live="polite">
                   <div>
                     <span style={{ width: `${renderProgress}%` }} />
                   </div>
@@ -1655,7 +1751,10 @@ export default function Home() {
                 {formats[format].label} · {theme.label}
               </strong>
             </div>
-            <button onClick={() => setIsPlaying((current) => !current)}>
+            <button
+              onClick={() => setIsPlaying((current) => !current)}
+              aria-pressed={isPlaying}
+            >
               {isPlaying ? "Pause" : "Play"}
             </button>
           </div>
@@ -1721,11 +1820,11 @@ export default function Home() {
             </div>
             <div>
               <span>EST. LENGTH</span>
-              <strong>{exportMode === "social" ? "15 sec" : "12 sec"}</strong>
+                <strong>{estimatedDuration} sec</strong>
             </div>
             <div>
               <span>OUTPUT</span>
-              <strong>{(selectedPlatform ? platforms[selectedPlatform] : formats[format]).width} × {(selectedPlatform ? platforms[selectedPlatform] : formats[format]).height}</strong>
+              <strong>{platforms[selectedPlatform].width} × {platforms[selectedPlatform].height}</strong>
             </div>
           </div>
         </aside>
