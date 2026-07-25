@@ -1,0 +1,27 @@
+kind = "slides"
+previewPath = "/listing-reel-slides/"
+title = "ListingReel Slide Show"
+version = "1.0.0"
+id = "artifacts/listing-reel-slides"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/listing-reel-slides/" ]
+localPort = 24655
+
+[services.development]
+run = "pnpm --filter @workspace/listing-reel-slides run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/listing-reel-slides", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/listing-reel-slides/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24655"
+BASE_PATH = "/listing-reel-slides/"

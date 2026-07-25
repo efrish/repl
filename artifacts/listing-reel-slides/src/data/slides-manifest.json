@@ -1,0 +1,42 @@
+[
+  {
+    "id": "c1a2e3f4-5b6d-7890-abcd-ef1234560001",
+    "position": 1,
+    "filepath": "src/pages/slides/Slide1.tsx",
+    "title": "ListingReel",
+    "description": "Title slide — property video studio introduction with hero image",
+    "speakerNotes": ""
+  },
+  {
+    "id": "c1a2e3f4-5b6d-7890-abcd-ef1234560002",
+    "position": 2,
+    "filepath": "src/pages/slides/Slide2.tsx",
+    "title": "The problem agents face",
+    "description": "Three key pain points real estate agents face with video content",
+    "speakerNotes": ""
+  },
+  {
+    "id": "c1a2e3f4-5b6d-7890-abcd-ef1234560003",
+    "position": 3,
+    "filepath": "src/pages/slides/Slide3.tsx",
+    "title": "A five-step studio in your browser",
+    "description": "The five-step workflow from photo upload to HD video export",
+    "speakerNotes": ""
+  },
+  {
+    "id": "c1a2e3f4-5b6d-7890-abcd-ef1234560004",
+    "position": 4,
+    "filepath": "src/pages/slides/Slide4.tsx",
+    "title": "Every format. Every platform.",
+    "description": "Three video formats and two export modes — social and MLS-safe",
+    "speakerNotes": ""
+  },
+  {
+    "id": "c1a2e3f4-5b6d-7890-abcd-ef1234560005",
+    "position": 5,
+    "filepath": "src/pages/slides/Slide5.tsx",
+    "title": "Ready to make your listing stand out?",
+    "description": "Closing slide — no install required, browser-based, device-local saving",
+    "speakerNotes": ""
+  }
+]
