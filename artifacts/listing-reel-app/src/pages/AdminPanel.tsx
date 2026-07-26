@@ -31,8 +31,25 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
 
   // Invite state
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteStatus, setInviteStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
-  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const signupUrl = `${window.location.origin}${import.meta.env.BASE_URL}sign-up`;
+
+  function copyLink() {
+    navigator.clipboard.writeText(signupUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function openEmail() {
+    const to = inviteEmail.trim();
+    const subject = encodeURIComponent("You're invited to ListingReel — Century 21 Hollywood");
+    const body = encodeURIComponent(
+      `Hi${to ? "" : " there"},\n\nI'd like to invite you to ListingReel, a tool I built exclusively for Century 21 Hollywood agents that turns your MLS photos into branded listing videos in under a minute.\n\nClick the link below to create your account:\n${signupUrl}\n\nOnce you sign up, I'll approve your access and you'll be ready to go.\n\nEdward Frish\nCentury 21 Hollywood`
+    );
+    window.open(`mailto:${to}?subject=${subject}&body=${body}`);
+  }
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -85,28 +102,6 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
     fetchUsers();
   }
 
-  async function sendInvite(e: React.FormEvent) {
-    e.preventDefault();
-    if (!inviteEmail.trim()) return;
-    setInviteStatus("sending");
-    setInviteError(null);
-    try {
-      const redirectUrl = `${window.location.origin}${import.meta.env.BASE_URL}sign-up`;
-      const res = await fetch(`${apiBase}/api/admin/invite`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: inviteEmail.trim(), redirectUrl }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to send");
-      setInviteStatus("sent");
-      setInviteEmail("");
-    } catch (err: any) {
-      setInviteError(err.message ?? "Failed to send invitation");
-      setInviteStatus("error");
-    }
-  }
 
   const pending = users.filter((u) => u.role && !u.approved);
   const approved = users.filter((u) => u.approved);
@@ -204,34 +199,37 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
             <div className="admin-invite-section">
               <h2 className="admin-invite-heading">Invite an agent</h2>
               <p className="admin-invite-desc">
-                Enter the agent's email address and they'll receive an invitation
-                to create their ListingReel account. Once they sign up they'll
-                appear in your Pending queue for approval.
+                Share your sign-up link with any agent. They create their account,
+                then appear in your Pending queue for approval.
               </p>
-              <form className="admin-invite-form" onSubmit={sendInvite}>
+
+              {/* Sign-up link */}
+              <div className="admin-invite-link-label">Sign-up link</div>
+              <div className="admin-invite-link-row">
+                <div className="admin-invite-link-box">{signupUrl}</div>
+                <button className="admin-btn approve admin-invite-copy-btn" onClick={copyLink}>
+                  {copied ? "✓ Copied!" : "Copy link"}
+                </button>
+              </div>
+
+              {/* Email composer */}
+              <div className="admin-invite-divider">— or compose an email —</div>
+              <div className="admin-invite-form">
                 <input
                   className="admin-invite-input"
                   type="email"
-                  placeholder="agent@example.com"
+                  placeholder="agent@example.com (optional)"
                   value={inviteEmail}
-                  onChange={(e) => { setInviteEmail(e.target.value); setInviteStatus("idle"); setInviteError(null); }}
-                  required
-                  disabled={inviteStatus === "sending"}
+                  onChange={(e) => setInviteEmail(e.target.value)}
                 />
-                <button
-                  className="admin-btn approve"
-                  type="submit"
-                  disabled={inviteStatus === "sending" || !inviteEmail.trim()}
-                >
-                  {inviteStatus === "sending" ? "Sending…" : "Send invite"}
+                <button className="admin-btn approve" onClick={openEmail}>
+                  Open in email app
                 </button>
-              </form>
-              {inviteStatus === "sent" && (
-                <p className="admin-invite-success">✓ Invitation sent! The agent will receive an email shortly.</p>
-              )}
-              {inviteStatus === "error" && inviteError && (
-                <p className="admin-invite-error">⚠ {inviteError}</p>
-              )}
+              </div>
+              <p className="admin-invite-desc" style={{ marginTop: "0.75rem" }}>
+                Opens your email client with a pre-written invitation. Leave the
+                field blank to fill the address yourself.
+              </p>
             </div>
           )}
 

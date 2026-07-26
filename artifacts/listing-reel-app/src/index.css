@@ -800,9 +800,26 @@ label:has(input:focus-visible) {
 .admin-btn.remove:hover { background: #fecaca; opacity: 1; }
 
 /* Invite tab */
-.admin-invite-section { padding: 2rem 1.5rem; max-width: 480px; }
+.admin-invite-section { padding: 2rem 1.5rem; max-width: 520px; }
 .admin-invite-heading { font-size: 1.1rem; font-weight: 700; margin: 0 0 .5rem; color: var(--ink); }
 .admin-invite-desc { font-size: .875rem; color: var(--ink-soft); margin: 0 0 1.5rem; line-height: 1.5; }
+.admin-invite-link-label { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); margin-bottom: .4rem; }
+.admin-invite-link-row { display: flex; gap: .5rem; align-items: stretch; margin-bottom: 1.5rem; }
+.admin-invite-link-box {
+  flex: 1;
+  background: #f0ece2;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: .6rem .9rem;
+  font-size: .8rem;
+  color: var(--ink-soft);
+  word-break: break-all;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+}
+.admin-invite-copy-btn { white-space: nowrap; min-width: 100px; }
+.admin-invite-divider { font-size: .75rem; color: var(--ink-soft); text-align: center; margin: 0 0 1rem; opacity: .7; }
 .admin-invite-form { display: flex; gap: .75rem; flex-wrap: wrap; }
 .admin-invite-input {
   flex: 1; min-width: 200px; padding: .55rem .85rem;
