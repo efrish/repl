@@ -365,6 +365,57 @@ function drawImageCover(
   );
 }
 
+/**
+ * Draws an image in "contain" mode — full image visible, no cropping.
+ * Fills the background first with a blurred cover version so there are
+ * no bare dark bars at the edges.
+ */
+function drawImageContain(
+  context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  width: number,
+  height: number,
+  demoIndex?: number,
+) {
+  let sourceX = 0;
+  let sourceY = 0;
+  let sourceWidth = image.naturalWidth;
+  let sourceHeight = image.naturalHeight;
+
+  if (demoIndex !== undefined) {
+    sourceWidth = image.naturalWidth / 3;
+    sourceHeight = image.naturalHeight / 2;
+    sourceX = (demoIndex % 3) * sourceWidth;
+    sourceY = Math.floor(demoIndex / 3) * sourceHeight;
+  }
+
+  // Blurred background fill so no bare bars appear
+  context.save();
+  context.filter = "blur(26px) brightness(0.55) saturate(0.8)";
+  drawImageCover(context, image, width, height, 1, demoIndex);
+  context.restore();
+
+  // Full image, centred, no crop
+  const sourceRatio = sourceWidth / sourceHeight;
+  const targetRatio = width / height;
+  let drawW: number;
+  let drawH: number;
+  if (sourceRatio > targetRatio) {
+    drawW = width;
+    drawH = width / sourceRatio;
+  } else {
+    drawH = height;
+    drawW = height * sourceRatio;
+  }
+  const drawX = (width - drawW) / 2;
+  const drawY = (height - drawH) / 2;
+  context.drawImage(
+    image,
+    sourceX, sourceY, sourceWidth, sourceHeight,
+    drawX, drawY, drawW, drawH,
+  );
+}
+
 function fitFont(
   context: CanvasRenderingContext2D,
   text: string,
@@ -1008,24 +1059,17 @@ function Home({
               context.shadowBlur = 12;
               context.fillStyle = "white";
               context.font = `700 ${fsMain}px Arial, sans-serif`;
-              context.fillText(st.headline, width / 2, height * 0.876);
+              context.fillText(st.headline, width / 2, height * 0.826);
               context.fillStyle = "rgba(255,255,255,0.78)";
               context.font = `500 ${Math.round(fsMain * 0.62)}px Arial, sans-serif`;
-              context.fillText(st.subline, width / 2, height * 0.921);
+              context.fillText(st.subline, width / 2, height * 0.871);
               context.textAlign = "left";
               context.shadowBlur = 0;
             }
             drawBranding();
             return;
           }
-          drawImageCover(
-            context,
-            scene.photo.image,
-            width,
-            height,
-            1.02 + sceneProgress * 0.055,
-            scene.photo.demoIndex,
-          );
+          drawImageContain(context, scene.photo.image, width, height, scene.photo.demoIndex);
           const vignette = context.createLinearGradient(0, height * 0.52, 0, height);
           vignette.addColorStop(0, "rgba(0,0,0,0)");
           vignette.addColorStop(1, exportMode === "mls" ? "rgba(0,0,0,.08)" : "rgba(0,0,0,.72)");
@@ -1037,12 +1081,12 @@ function Home({
             const st = getSlideText(scene.index, project, highlightList);
             context.fillStyle = "rgba(255,255,255,.92)";
             context.font = `600 ${Math.round(width * 0.032)}px Arial, sans-serif`;
-            context.fillText(st.subline, pad, height - pad * 1.55);
+            context.fillText(st.subline, pad, height - pad * 2.75);
             context.fillStyle = theme.accent;
             context.font = `700 ${Math.round(width * 0.038)}px Arial, sans-serif`;
-            context.fillText(st.headline, pad, height - pad * 2.18);
+            context.fillText(st.headline, pad, height - pad * 3.38);
             context.fillStyle = theme.accent;
-            context.fillRect(pad, height - pad * 1.25, width * 0.18, Math.max(4, width * 0.006));
+            context.fillRect(pad, height - pad * 2.45, width * 0.18, Math.max(4, width * 0.006));
           }
           drawBranding();
           return;
