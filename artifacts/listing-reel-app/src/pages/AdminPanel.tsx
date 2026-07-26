@@ -163,7 +163,7 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
           </button>
           <button
             className={`admin-tab${tab === "invite" ? " active" : ""}`}
-            onClick={() => { setTab("invite"); setInviteStatus("idle"); setInviteError(null); }}
+            onClick={() => setTab("invite")}
           >
             ✉ Invite
           </button>
