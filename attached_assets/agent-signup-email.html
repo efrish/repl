@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ListingReel — You're Invited</title>
+<style>
+  /* Reset */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background-color: #f0ede7; font-family: 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+
+  /* Wrapper */
+  .wrapper { background-color: #f0ede7; padding: 40px 16px; }
+  .container { max-width: 600px; margin: 0 auto; background-color: #1c1c1e; }
+
+  /* Gold top bar */
+  .top-bar { height: 4px; background: linear-gradient(90deg, #8a7036 0%, #dfc68b 50%, #8a7036 100%); }
+
+  /* Header */
+  .header { padding: 48px 48px 32px; text-align: center; border-bottom: 1px solid rgba(184,154,90,0.2); }
+  .logo-lockup { display: inline-block; }
+  .logo-name {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 28px;
+    font-weight: normal;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #f5f2ec;
+  }
+  .logo-name span { color: #b89a5a; }
+  .logo-tagline {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #6a6a6f;
+    margin-top: 6px;
+  }
+
+  /* Hero */
+  .hero { padding: 48px 48px 40px; text-align: center; }
+  .hero-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: #b89a5a;
+    margin-bottom: 20px;
+  }
+  .hero-headline {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 36px;
+    line-height: 1.15;
+    color: #f5f2ec;
+    margin-bottom: 20px;
+  }
+  .hero-headline em { color: #b89a5a; font-style: normal; }
+  .hero-body {
+    font-size: 15px;
+    line-height: 1.75;
+    color: #a8a5a0;
+    max-width: 440px;
+    margin: 0 auto 36px;
+  }
+  .cta-btn {
+    display: inline-block;
+    background-color: #b89a5a;
+    color: #1c1c1e !important;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 16px 40px;
+  }
+  .cta-btn:hover { background-color: #dfc68b; }
+
+  /* Divider */
+  .gold-rule { height: 1px; background: linear-gradient(90deg, transparent, #b89a5a, transparent); margin: 0 48px; }
+
+  /* Features */
+  .features { padding: 40px 48px; }
+  .features-title {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #6a6a6f;
+    margin-bottom: 28px;
+    text-align: center;
+  }
+  .feature-row { display: flex; gap: 12px; margin-bottom: 20px; align-items: flex-start; }
+  .feature-icon {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    background: rgba(184,154,90,0.12);
+    border: 1px solid rgba(184,154,90,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .feature-text {}
+  .feature-heading { font-size: 13px; font-weight: 600; color: #f5f2ec; margin-bottom: 3px; letter-spacing: 0.05em; }
+  .feature-desc { font-size: 13px; color: #7a7a7f; line-height: 1.5; }
+
+  /* Quote */
+  .quote-block {
+    margin: 0 48px;
+    padding: 28px 32px;
+    border-left: 3px solid #b89a5a;
+    background: rgba(184,154,90,0.06);
+  }
+  .quote-text { font-family: Georgia, serif; font-size: 15px; color: #e6e3dd; line-height: 1.65; font-style: italic; margin-bottom: 12px; }
+  .quote-sig { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #b89a5a; }
+
+  /* CTA block */
+  .cta-block { padding: 40px 48px; text-align: center; }
+  .cta-block p { font-size: 13px; color: #6a6a6f; margin-top: 16px; line-height: 1.6; }
+  .cta-block a { color: #b89a5a; text-decoration: none; }
+
+  /* Footer */
+  .footer { padding: 32px 48px; border-top: 1px solid rgba(184,154,90,0.15); text-align: center; }
+  .footer p { font-size: 11px; color: #4a4a4f; line-height: 1.7; letter-spacing: 0.03em; }
+  .footer a { color: #6a6a6f; text-decoration: none; }
+
+  /* Bottom bar */
+  .bottom-bar { height: 3px; background: linear-gradient(90deg, #8a7036 0%, #dfc68b 50%, #8a7036 100%); }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="container">
+
+    <div class="top-bar"></div>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="logo-lockup">
+        <div class="logo-name">Listing<span>Reel</span></div>
+        <div class="logo-tagline">Century 21 Hollywood &nbsp;·&nbsp; Exclusive Agent Tool</div>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-eyebrow">You're Invited</div>
+      <h1 class="hero-headline">
+        Create Stunning Listing Videos<br/>
+        <em>In Under 60 Seconds.</em>
+      </h1>
+      <p class="hero-body">
+        I'm rolling out a brand new tool exclusively for our agents at Century 21 Hollywood.
+        Upload your MLS photos, pick a style, and walk away with a polished branded video
+        ready to post on Instagram, TikTok, Facebook, or LinkedIn — no editing skills required.
+      </p>
+      <a class="cta-btn" href="YOUR_LISTING_REEL_URL_HERE" target="_blank">
+        Request Access Now
+      </a>
+    </div>
+
+    <div class="gold-rule"></div>
+
+    <!-- Features -->
+    <div class="features">
+      <div class="features-title">What you get</div>
+
+      <div class="feature-row">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-text">
+          <div class="feature-heading">100% Private</div>
+          <div class="feature-desc">Your listing photos never leave your browser. Nothing is uploaded to any server.</div>
+        </div>
+      </div>
+
+      <div class="feature-row">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-text">
+          <div class="feature-heading">Ready in Seconds</div>
+          <div class="feature-desc">Drop in your photos, choose a style, and export. No timeline. No learning curve.</div>
+        </div>
+      </div>
+
+      <div class="feature-row">
+        <div class="feature-icon">🏆</div>
+        <div class="feature-text">
+          <div class="feature-heading">Century 21 Branded</div>
+          <div class="feature-desc">Every video carries our office branding automatically — consistent and professional.</div>
+        </div>
+      </div>
+
+      <div class="feature-row">
+        <div class="feature-icon">📲</div>
+        <div class="feature-text">
+          <div class="feature-heading">Built for Social</div>
+          <div class="feature-desc">Export formats optimized for Instagram Reels, TikTok, Facebook, and LinkedIn.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="gold-rule"></div>
+
+    <!-- Quote -->
+    <div style="padding: 36px 0;">
+      <div class="quote-block">
+        <p class="quote-text">
+          "Your competitors are already posting video. This tool gives our team the same
+          production quality — without the cost or the time. I built it specifically for us."
+        </p>
+        <div class="quote-sig">Edward Frish &nbsp;·&nbsp; Broker/Agent, Century 21 Hollywood</div>
+      </div>
+    </div>
+
+    <!-- CTA Block -->
+    <div class="cta-block">
+      <a class="cta-btn" href="YOUR_LISTING_REEL_URL_HERE" target="_blank">
+        Watch the Demo &amp; Sign Up
+      </a>
+      <p>
+        Access is by approval only and exclusively available to<br/>
+        Century 21 Hollywood agents.<br/>
+        Questions? Reply to this email or reach me at
+        <a href="mailto:efrish@c21edva.com">efrish@c21edva.com</a>
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>
+        Century 21 Hollywood &nbsp;·&nbsp; Edward Frish<br/>
+        <a href="mailto:efrish@c21edva.com">efrish@c21edva.com</a><br/><br/>
+        This invitation was sent exclusively to Century 21 Hollywood agents.<br/>
+        <a href="#">Unsubscribe</a>
+      </p>
+    </div>
+
+    <div class="bottom-bar"></div>
+
+  </div>
+</div>
+</body>
+</html>

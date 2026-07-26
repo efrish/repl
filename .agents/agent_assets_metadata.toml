@@ -12,3 +12,15 @@ id = "qoL98q_Li27G6YcKHNztO"
 uri = "file://listreel-complete.zip"
 type = "unspecified"
 title = "ListingReel – Complete Project ZIP"
+
+[[outputs]]
+id = "r6xkr6AEdZfLiONepJznB"
+uri = "file://attached_assets/agent-signup-email.html"
+type = "unspecified"
+title = "Agent Signup Email"
+
+[[outputs]]
+id = "JhsKFI_1GYdR5n4E73MP1"
+uri = "file://attached_assets/social-media-kit.md"
+type = "text"
+title = "Social Media Ad Copy Kit"
