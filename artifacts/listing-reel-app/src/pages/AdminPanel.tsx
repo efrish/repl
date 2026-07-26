@@ -17,7 +17,7 @@ interface AdminPanelProps {
   onClose: () => void;
 }
 
-type Tab = "pending" | "approved" | "all";
+type Tab = "pending" | "approved" | "all" | "invite";
 
 export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
   const { signOut } = useClerk();
@@ -28,6 +28,11 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("pending");
   const [busy, setBusy] = useState<string | null>(null);
+
+  // Invite state
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteStatus, setInviteStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -69,15 +74,38 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
     fetchUsers();
   }
 
-  async function revoke(id: string) {
-    if (!confirm("Revoke this user's access? They'll see the pending screen again.")) return;
+  async function remove(id: string) {
+    if (!confirm("Remove this agent? Their account will be deleted and they'll need to sign up again.")) return;
     setBusy(id);
-    await fetch(`${apiBase}/api/admin/users/${id}`, {
-      method: "DELETE",
+    await fetch(`${apiBase}/api/admin/users/${id}/reject`, {
+      method: "POST",
       credentials: "include",
     });
     setBusy(null);
     fetchUsers();
+  }
+
+  async function sendInvite(e: React.FormEvent) {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+    setInviteStatus("sending");
+    setInviteError(null);
+    try {
+      const redirectUrl = `${window.location.origin}${import.meta.env.BASE_URL}`;
+      const res = await fetch(`${apiBase}/api/admin/invite`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail.trim(), redirectUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to send");
+      setInviteStatus("sent");
+      setInviteEmail("");
+    } catch (err: any) {
+      setInviteError(err.message ?? "Failed to send invitation");
+      setInviteStatus("error");
+    }
   }
 
   const pending = users.filter((u) => u.role && !u.approved);
@@ -138,25 +166,31 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
           >
             All users ({users.length})
           </button>
+          <button
+            className={`admin-tab${tab === "invite" ? " active" : ""}`}
+            onClick={() => { setTab("invite"); setInviteStatus("idle"); setInviteError(null); }}
+          >
+            ✉ Invite
+          </button>
         </div>
 
         {/* Body */}
         <div className="admin-body">
-          {loading && (
+          {tab !== "invite" && loading && (
             <div className="admin-loading">
               <div className="auth-loading-spinner" />
               <span>Loading users…</span>
             </div>
           )}
 
-          {error && (
+          {tab !== "invite" && error && (
             <div className="admin-error">
               {error}
               <button onClick={fetchUsers}>Retry</button>
             </div>
           )}
 
-          {!loading && !error && displayed.length === 0 && (
+          {tab !== "invite" && !loading && !error && displayed.length === 0 && (
             <div className="admin-empty">
               {tab === "pending"
                 ? "No pending requests right now."
@@ -166,7 +200,42 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
             </div>
           )}
 
-          {!loading && !error && displayed.length > 0 && (
+          {tab === "invite" && (
+            <div className="admin-invite-section">
+              <h2 className="admin-invite-heading">Invite an agent</h2>
+              <p className="admin-invite-desc">
+                Enter the agent's email address and they'll receive an invitation
+                to create their ListingReel account. Once they sign up they'll
+                appear in your Pending queue for approval.
+              </p>
+              <form className="admin-invite-form" onSubmit={sendInvite}>
+                <input
+                  className="admin-invite-input"
+                  type="email"
+                  placeholder="agent@example.com"
+                  value={inviteEmail}
+                  onChange={(e) => { setInviteEmail(e.target.value); setInviteStatus("idle"); setInviteError(null); }}
+                  required
+                  disabled={inviteStatus === "sending"}
+                />
+                <button
+                  className="admin-btn approve"
+                  type="submit"
+                  disabled={inviteStatus === "sending" || !inviteEmail.trim()}
+                >
+                  {inviteStatus === "sending" ? "Sending…" : "Send invite"}
+                </button>
+              </form>
+              {inviteStatus === "sent" && (
+                <p className="admin-invite-success">✓ Invitation sent! The agent will receive an email shortly.</p>
+              )}
+              {inviteStatus === "error" && inviteError && (
+                <p className="admin-invite-error">⚠ {inviteError}</p>
+              )}
+            </div>
+          )}
+
+          {tab !== "invite" && !loading && !error && displayed.length > 0 && (
             <div className="admin-user-list">
               {displayed.map((u) => {
                 const name = [u.firstName, u.lastName].filter(Boolean).join(" ");
@@ -220,11 +289,11 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
                       )}
                       {isApproved && u.role !== "admin" && (
                         <button
-                          className="admin-btn revoke"
-                          onClick={() => revoke(u.id)}
+                          className="admin-btn remove"
+                          onClick={() => remove(u.id)}
                           disabled={isBusy}
                         >
-                          {isBusy ? "…" : "Revoke access"}
+                          {isBusy ? "…" : "Remove"}
                         </button>
                       )}
                       {u.role === "admin" && (

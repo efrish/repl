@@ -104,4 +104,28 @@ router.delete(
   },
 );
 
+/** POST /api/admin/invite — send a Clerk email invitation */
+router.post(
+  "/admin/invite",
+  requireAuth,
+  requireAdmin,
+  async (req: any, res: any) => {
+    const { email, redirectUrl } = req.body as { email?: string; redirectUrl?: string };
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: "Valid email is required" });
+    }
+    try {
+      await clerkClient.invitations.createInvitation({
+        emailAddress: email.trim().toLowerCase(),
+        ...(redirectUrl ? { redirectUrl } : {}),
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("Invite error:", err);
+      const msg = err?.errors?.[0]?.longMessage ?? err?.message ?? "Failed to send invitation";
+      res.status(500).json({ error: msg });
+    }
+  },
+);
+
 export default router;
