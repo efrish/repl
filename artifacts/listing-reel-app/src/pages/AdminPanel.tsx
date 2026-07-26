@@ -31,6 +31,7 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
 
   // Invite state
   const [inviteEmail, setInviteEmail] = useState("");
+  const [invitePhone, setInvitePhone] = useState("");
   const [copied, setCopied] = useState(false);
 
   const signupUrl = `${window.location.origin}${import.meta.env.BASE_URL}sign-up`;
@@ -49,6 +50,14 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
       `Hi${to ? "" : " there"},\n\nI'd like to invite you to ListingReel, a tool I built exclusively for Century 21 Hollywood agents that turns your MLS photos into branded listing videos in under a minute.\n\nClick the link below to create your account:\n${signupUrl}\n\nOnce you sign up, I'll approve your access and you'll be ready to go.\n\nEdward Frish\nCentury 21 Hollywood`
     );
     window.open(`mailto:${to}?subject=${subject}&body=${body}`);
+  }
+
+  function openSMS() {
+    const to = invitePhone.trim().replace(/\D/g, "");
+    const body = encodeURIComponent(
+      `Hey! I'd like to invite you to ListingReel — a tool I built for Century 21 Hollywood agents that turns MLS photos into branded listing videos in under a minute. Sign up here: ${signupUrl}`
+    );
+    window.open(`sms:${to ? `+1${to}` : ""}?body=${body}`);
   }
 
   const fetchUsers = useCallback(async () => {
@@ -229,6 +238,25 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
               <p className="admin-invite-desc" style={{ marginTop: "0.75rem" }}>
                 Opens your email client with a pre-written invitation. Leave the
                 field blank to fill the address yourself.
+              </p>
+
+              {/* SMS composer */}
+              <div className="admin-invite-divider">— or send a text —</div>
+              <div className="admin-invite-form">
+                <input
+                  className="admin-invite-input"
+                  type="tel"
+                  placeholder="(310) 555-0100 (optional)"
+                  value={invitePhone}
+                  onChange={(e) => setInvitePhone(e.target.value)}
+                />
+                <button className="admin-btn approve" onClick={openSMS}>
+                  💬 Open in messages app
+                </button>
+              </div>
+              <p className="admin-invite-desc" style={{ marginTop: "0.75rem" }}>
+                Opens your messages app with a pre-written text. Leave the
+                field blank to fill the number yourself.
               </p>
             </div>
           )}
