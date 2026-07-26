@@ -91,7 +91,7 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
     setInviteStatus("sending");
     setInviteError(null);
     try {
-      const redirectUrl = `${window.location.origin}${import.meta.env.BASE_URL}`;
+      const redirectUrl = `${window.location.origin}${import.meta.env.BASE_URL}sign-up`;
       const res = await fetch(`${apiBase}/api/admin/invite`, {
         method: "POST",
         credentials: "include",
