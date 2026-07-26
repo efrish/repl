@@ -57,7 +57,7 @@ export default function AdminPanel({ apiBase, onClose }: AdminPanelProps) {
     const body = encodeURIComponent(
       `Hey! I'd like to invite you to ListingReel — a tool I built for Century 21 Hollywood agents that turns MLS photos into branded listing videos in under a minute. Sign up here: ${signupUrl}`
     );
-    window.open(`sms:${to ? `+1${to}` : ""}?body=${body}`);
+    window.location.href = `sms:${to ? `+1${to}` : ""}?body=${body}`;
   }
 
   const fetchUsers = useCallback(async () => {
