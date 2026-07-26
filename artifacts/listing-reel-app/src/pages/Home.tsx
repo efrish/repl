@@ -2042,7 +2042,10 @@ function Home({
               style={
                 previewPhoto && style !== "triptych"
                   ? {
-                      backgroundImage: `url("${previewPhoto.url}")`,
+                      // Uploaded photos use child divs; demo spritesheet stays on parent
+                      ...(previewPhoto.demoIndex !== undefined
+                        ? { backgroundImage: `url("${previewPhoto.url}")` }
+                        : {}),
                       "--preview-accent": theme.accent,
                       "--preview-dark": theme.dark,
                     } as CSSProperties
@@ -2064,7 +2067,16 @@ function Home({
                       />
                     </>
                   ) : (
-                    <div className="preview-vignette" />
+                    <>
+                      {previewPhoto.demoIndex === undefined && (
+                        /* Uploaded photo — blurred cover behind, full image contained in front */
+                        <>
+                          <div className="preview-bg-blur" style={{ backgroundImage: `url("${previewPhoto.url}")` }} />
+                          <div className="preview-bg-contain" style={{ backgroundImage: `url("${previewPhoto.url}")` }} />
+                        </>
+                      )}
+                      <div className="preview-vignette" />
+                    </>
                   )}
                   {exportMode === "social" && (
                     <div className={`preview-copy${style === "triptych" ? " triptych-copy" : ""}`}>

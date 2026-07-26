@@ -2140,12 +2140,34 @@ label:has(input:focus-visible) {
   width: min(96%, 610px);
 }
 
+/* Layers for uploaded-photo preview (blurred bg + full contained image) */
+.preview-bg-blur {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  filter: blur(24px) brightness(0.55) saturate(0.8);
+  inset: -32px;
+  position: absolute;
+  z-index: 0;
+}
+
+.preview-bg-contain {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  inset: 0;
+  position: absolute;
+  transition: background-image 500ms ease;
+  z-index: 1;
+}
+
 .preview-vignette {
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.06) 20%, rgba(0, 0, 0, 0.76)),
     linear-gradient(90deg, rgba(0, 0, 0, 0.15), transparent 50%);
   inset: 0;
   position: absolute;
+  z-index: 2;
 }
 
 .preview-copy {
@@ -2153,7 +2175,7 @@ label:has(input:focus-visible) {
   left: 8%;
   position: absolute;
   right: 8%;
-  z-index: 1;
+  z-index: 3;
 }
 
 .preview-copy > span {
@@ -2200,7 +2222,7 @@ label:has(input:focus-visible) {
   left: 8%;
   position: absolute;
   right: 8%;
-  z-index: 2;
+  z-index: 4;
 }
 
 .preview-progress button {
